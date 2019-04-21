@@ -1,24 +1,23 @@
 import tcod as libtcod
+from world import World
 
 
-class Engine:
+class Game:
+    """Game session object"""
     screen_width = 80
     screen_height = 50
 
-    def __init__(self):
-        pass
+    def __init__(self) -> None:
+        self.world = World()
 
-    def __str__(self):
-        return "Engine"
-
-    def run(self):
+    def run(self) -> bool:
         print("Running")
 
+        # TODO extract console handler class
         libtcod.console_set_custom_font('./resources/fonts/arial12x12.png',
                                         libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
 
         console = libtcod.console_init_root(self.screen_width, self.screen_height, 'libtcod tutorial revised', False)
-        print("Console {}".format(console))
 
         while not libtcod.console_is_window_closed():
             libtcod.console_set_default_foreground(console, libtcod.white)
