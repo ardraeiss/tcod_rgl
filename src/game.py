@@ -1,6 +1,6 @@
 import tcod
-from world import World
-from character import Character
+from elements.world import World
+from elements.character import Character
 
 
 class Game:
