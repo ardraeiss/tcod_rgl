@@ -32,6 +32,7 @@ class Game:
             console.print_(x=0, y=0, string='Hello World!')
             player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
             npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, '@', tcod.yellow)
+            entities = [npc, player]
 
             key = tcod.Key()
             mouse = tcod.Mouse()
@@ -39,12 +40,15 @@ class Game:
             while not tcod.console_is_window_closed():
                 tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
 
-                tcod.console_put_char_ex(console, player.x, player.y, player.char, fore=player.color, back=tcod.black)
-                tcod.console_put_char_ex(console, npc.x, npc.y, npc.char, fore=npc.color, back=tcod.black)
+                for entry in entities:
+                    tcod.console_put_char_ex(console, entry.x, entry.y, entry.char, fore=entry.color, back=tcod.black)
+
                 tcod.console_blit(console, 0, 0, self.screen_width, self.screen_height, main_console, 0, 0)
                 tcod.console_flush()
-                tcod.console_put_char(console, player.x, player.y, ' ', tcod.BKGND_NONE)
-                tcod.console_put_char(console, npc.x, npc.y, ' ', tcod.BKGND_NONE)
+
+                # clean console space
+                for entry in entities:
+                    tcod.console_put_char(console, entry.x, entry.y, ' ', tcod.BKGND_NONE)
 
                 action = handle_keys(key)
                 a_move = action.get('move')
@@ -57,6 +61,7 @@ class Game:
                 if a_move:
                     dx, dy = a_move
                     player.move(dx, dy)
+                    npc.move(dx, 0)
 
                 if a_fullscreen:
                     tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
