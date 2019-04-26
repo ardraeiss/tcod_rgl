@@ -1,33 +1,62 @@
 import tcod
+
+from elements.entity import Entity
 from elements.world import World
-from elements.character import Character
+from input_handlers import handle_keys
 
 
 class Game:
     """Game session object"""
     screen_width = 80
     screen_height = 50
+    title = 'tcod tutorial revised'
+    fullscreen = False
 
     def __init__(self) -> None:
+        tcod.console_set_custom_font('./resources/fonts/arial12x12.png',
+                                     tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
+
         self.world = World()
-        self.player = Character((int(self.screen_width / 2), int(self.screen_height / 2)), '@')
 
     def run(self) -> bool:
         print("Running")
 
         # TODO extract console handler class
-        tcod.console_set_custom_font('./resources/fonts/arial12x12.png',
-                                     tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
+        with tcod.console_init_root(
+                self.screen_width,
+                self.screen_height,
+                self.title,
+                self.fullscreen,
+                order="F") as main_console:
+            console = tcod.console_new(self.screen_width, self.screen_height)
+            console.print_(x=0, y=0, string='Hello World!')
+            player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
+            npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, '@', tcod.yellow)
 
-        console = tcod.console_init_root(self.screen_width, self.screen_height, 'tcod tutorial revised', False)
+            key = tcod.Key()
+            mouse = tcod.Mouse()
 
-        while not tcod.console_is_window_closed():
-            tcod.console_set_default_foreground(console, tcod.white)
-            self.player.draw(console)
-            # tcod.console_put_char(console, self.player.x, self.player.y, '@', tcod.BKGND_NONE)
-            tcod.console_flush()
+            while not tcod.console_is_window_closed():
+                tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
 
-            key = tcod.console_check_for_keypress()
+                tcod.console_put_char_ex(console, player.x, player.y, player.char, fore=player.color, back=tcod.black)
+                tcod.console_put_char_ex(console, npc.x, npc.y, npc.char, fore=npc.color, back=tcod.black)
+                tcod.console_blit(console, 0, 0, self.screen_width, self.screen_height, main_console, 0, 0)
+                tcod.console_flush()
+                tcod.console_put_char(console, player.x, player.y, ' ', tcod.BKGND_NONE)
+                tcod.console_put_char(console, npc.x, npc.y, ' ', tcod.BKGND_NONE)
 
-            if key.vk == tcod.KEY_ESCAPE:
-                return True
+                action = handle_keys(key)
+                a_move = action.get('move')
+                a_exit = action.get('exit')
+                a_fullscreen = action.get('fullscreen')
+
+                if a_exit:
+                    return True
+
+                if a_move:
+                    dx, dy = a_move
+                    player.move(dx, dy)
+
+                if a_fullscreen:
+                    tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
