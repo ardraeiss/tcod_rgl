@@ -3,16 +3,16 @@ import tcod
 
 def handle_keys(key):
     # Movement keys
-    if key.vk == tcod.KEY_UP:
+    if key.vk in (tcod.KEY_UP, tcod.KEY_KP8):
         return {'move': (0, -1)}
-    elif key.vk == tcod.KEY_DOWN:
+    elif key.vk in (tcod.KEY_DOWN, tcod.KEY_KP2):
         return {'move': (0, 1)}
-    elif key.vk == tcod.KEY_LEFT:
+    elif key.vk in (tcod.KEY_LEFT, tcod.KEY_KP4):
         return {'move': (-1, 0)}
-    elif key.vk == tcod.KEY_RIGHT:
+    elif key.vk in (tcod.KEY_RIGHT, tcod.KEY_KP6):
         return {'move': (1, 0)}
 
-    if key.vk == tcod.KEY_ENTER and key.lalt:
+    if key.vk in (tcod.KEY_ENTER, tcod.KEY_KPENTER) and key.lalt:
         # Alt+Enter: toggle full screen
         return {'fullscreen': True}
 
