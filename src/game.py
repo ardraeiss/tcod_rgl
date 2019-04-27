@@ -4,7 +4,7 @@ from elements.entity import Entity
 from elements.world import World
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
-from render_functions import render_all, clean_all
+from render_functions import render_all
 
 
 class Game:
@@ -23,6 +23,10 @@ class Game:
 
         self.world = World()
 
+        self.player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
+        self.npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, 'r', tcod.dark_green)
+        self.entities = [self.npc, self.player]
+
     def run(self) -> bool:
         print("Running")
 
@@ -39,23 +43,13 @@ class Game:
         game_map = GameMap(self.map_width, self.map_height)
         game_map.make_map()
 
-        player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
-        npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, '@', tcod.yellow)
-        npc2 = Entity(int(self.screen_width / 2)+5, int(self.screen_height / 2)+1, 'r', tcod.light_grey)
-        entities = [npc, player, npc2]
-
         key = tcod.Key()
         mouse = tcod.Mouse()
 
         while not tcod.console_is_window_closed():
             tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
 
-            render_all(main_console, console, entities, game_map, self.screen_width, self.screen_height)
-
-            tcod.console_flush()
-
-            # clean console space
-            clean_all(console, entities)
+            render_all(main_console, console, self.entities, game_map, self.screen_width, self.screen_height)
 
             action = handle_keys(key)
             a_move = action.get('move')
@@ -67,12 +61,10 @@ class Game:
 
             if a_move:
                 dx, dy = a_move
-                if not game_map.is_blocked(player.x + dx, player.y + dy):
-                    player.move(dx, dy)
-                if not game_map.is_blocked(npc.x + dx, npc.y):
-                    npc.move(dx, 0)
-                if not game_map.is_blocked(npc2.x, npc2.y + dy):
-                    npc2.move(0, dy)
+                if not game_map.is_blocked(self.player.x + dx, self.player.y + dy):
+                    self.player.move(dx, dy)
+                if not game_map.is_blocked(self.npc.x + dx, self.npc.y):
+                    self.npc.move(dx, 0)
 
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
