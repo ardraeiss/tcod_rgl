@@ -37,6 +37,7 @@ class Game:
         console.print_(x=0, y=0, string='Hello World!')
 
         game_map = GameMap(self.map_width, self.map_height)
+        game_map.make_map()
 
         player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
         npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, '@', tcod.yellow)
