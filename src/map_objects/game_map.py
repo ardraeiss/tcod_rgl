@@ -1,3 +1,5 @@
+from random import randint
+
 from map_objects.tile import Tile
 from rect import Rect
 
@@ -32,14 +34,20 @@ class GameMap:
 
     ##
     # Map creation
-    def make_map(self):
-        room1 = Rect(20, 15, 10, 15)
-        room2 = Rect(35, 15, 10, 15)
+    def make_map(self, max_rooms, room_min_size, room_max_size, map_width, map_height, player):
+        rooms = []
 
-        self.create_room(room1)
-        self.create_room(room2)
+        for r in range(max_rooms):
+            # random width and height
+            w = randint(room_min_size, room_max_size)
+            h = randint(room_min_size, room_max_size)
+            # random position without going out of the boundaries of the map
+            x = randint(0, map_width - w - 1)
+            y = randint(0, map_height - h - 1)
+            rooms.append(Rect(x, y, w, h))
 
-        self.create_h_tunnel(25, 40, 23)
+        for room in rooms:
+            self.create_room(room)
 
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
