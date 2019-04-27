@@ -31,9 +31,8 @@ class Game:
         self.npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, 'r', tcod.dark_green)
         self.entities = [self.npc, self.player]
 
-        self.game_map = GameMap(self.map_width, self.map_height)
-        self.game_map.make_map(self.max_rooms, self.room_min_size, self.room_max_size,
-                               self.map_width, self.map_height, self.player)
+        self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
+        self.game_map.make_map(self.max_rooms, self.player)
 
     def run(self) -> bool:
         print("Running")
