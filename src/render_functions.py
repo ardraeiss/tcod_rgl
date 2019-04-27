@@ -24,6 +24,11 @@ def render_all(main_console, console, entities, game_map, screen_width, screen_h
 
     tcod.console_blit(console, 0, 0, screen_width, screen_height, main_console, 0, 0)
 
+    tcod.console_flush()
+
+    # clean console space
+    clean_all(console, entities)
+
 
 def clean_all(console, entities):
     # Remove all entities from screen
