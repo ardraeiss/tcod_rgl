@@ -1,7 +1,23 @@
 import tcod
 
 
-def render_all(main_console, console, entities, screen_width, screen_height):
+colors = {
+    'dark_wall': tcod.Color(0, 0, 100),
+    'dark_ground': tcod.Color(50, 50, 150),
+}
+
+
+def render_all(main_console, console, entities, game_map, screen_width, screen_height):
+    # Draw map tiles
+    for y in range(game_map.height):
+        for x in range(game_map.width):
+            wall = game_map.tiles[x][y].block_sight
+
+            if wall:
+                console.bg[y, x] = colors['dark_wall']
+            else:
+                console.bg[y, x] = colors['dark_ground']
+
     # Draw all entities
     for entry in entities:
         draw_entity(console, entry)

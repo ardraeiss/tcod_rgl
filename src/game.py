@@ -3,15 +3,19 @@ import tcod
 from elements.entity import Entity
 from elements.world import World
 from input_handlers import handle_keys
+from map_objects.game_map import GameMap
 from render_functions import render_all, clean_all
 
 
 class Game:
     """Game session object"""
-    screen_width = 80
-    screen_height = 50
     title = 'tcod tutorial revised'
     fullscreen = False
+
+    screen_width = 80
+    screen_height = 50
+    map_width = 80
+    map_height = 45
 
     def __init__(self) -> None:
         tcod.console_set_custom_font('./resources/fonts/arial12x12.png',
@@ -31,6 +35,9 @@ class Game:
                 order="F") as main_console:
             console = tcod.console_new(self.screen_width, self.screen_height)
             console.print_(x=0, y=0, string='Hello World!')
+
+            game_map = GameMap(self.map_width, self.map_height)
+
             player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
             npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, '@', tcod.yellow)
             npc2 = Entity(int(self.screen_width / 2)+5, int(self.screen_height / 2)+1, 'r', tcod.light_grey)
@@ -42,7 +49,7 @@ class Game:
             while not tcod.console_is_window_closed():
                 tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
 
-                render_all(main_console, console, entities, self.screen_width, self.screen_height)
+                render_all(main_console, console, entities, game_map, self.screen_width, self.screen_height)
 
                 tcod.console_flush()
 
