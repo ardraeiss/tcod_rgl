@@ -27,48 +27,51 @@ class Game:
         print("Running")
 
         # TODO extract console handler class
-        with tcod.console_init_root(
+        main_console = tcod.console_init_root(
                 self.screen_width,
                 self.screen_height,
                 self.title,
                 self.fullscreen,
-                order="F") as main_console:
-            console = tcod.console_new(self.screen_width, self.screen_height)
-            console.print_(x=0, y=0, string='Hello World!')
+                order="F")
+        console = tcod.console_new(self.screen_width, self.screen_height)
+        console.print_(x=0, y=0, string='Hello World!')
 
-            game_map = GameMap(self.map_width, self.map_height)
+        game_map = GameMap(self.map_width, self.map_height)
 
-            player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
-            npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, '@', tcod.yellow)
-            npc2 = Entity(int(self.screen_width / 2)+5, int(self.screen_height / 2)+1, 'r', tcod.light_grey)
-            entities = [npc, player, npc2]
+        player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
+        npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, '@', tcod.yellow)
+        npc2 = Entity(int(self.screen_width / 2)+5, int(self.screen_height / 2)+1, 'r', tcod.light_grey)
+        entities = [npc, player, npc2]
 
-            key = tcod.Key()
-            mouse = tcod.Mouse()
+        key = tcod.Key()
+        mouse = tcod.Mouse()
 
-            while not tcod.console_is_window_closed():
-                tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
+        while not tcod.console_is_window_closed():
+            tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
 
-                render_all(main_console, console, entities, game_map, self.screen_width, self.screen_height)
+            render_all(main_console, console, entities, game_map, self.screen_width, self.screen_height)
 
-                tcod.console_flush()
+            tcod.console_flush()
 
-                # clean console space
-                clean_all(console, entities)
+            # clean console space
+            clean_all(console, entities)
 
-                action = handle_keys(key)
-                a_move = action.get('move')
-                a_exit = action.get('exit')
-                a_fullscreen = action.get('fullscreen')
+            action = handle_keys(key)
+            a_move = action.get('move')
+            a_exit = action.get('exit')
+            a_fullscreen = action.get('fullscreen')
 
-                if a_exit:
-                    return True
+            if a_exit:
+                return True
 
-                if a_move:
-                    dx, dy = a_move
+            if a_move:
+                dx, dy = a_move
+                if not game_map.is_blocked(player.x + dx, player.y + dy):
                     player.move(dx, dy)
+                if not game_map.is_blocked(npc.x + dx, npc.y):
                     npc.move(dx, 0)
+                if not game_map.is_blocked(npc2.x, npc2.y + dy):
                     npc2.move(0, dy)
 
-                if a_fullscreen:
-                    tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+            if a_fullscreen:
+                tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
