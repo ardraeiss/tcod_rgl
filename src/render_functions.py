@@ -21,7 +21,8 @@ def render_all(main_console, console, entities, game_map, fov_map, screen_width,
                     console.bg[y, x] = colors['light_wall']
                 else:
                     console.bg[y, x] = colors['light_ground']
-            else:
+                game_map.tiles[x][y].explored = True
+            elif game_map.tiles[x][y].explored:
                 if wall:
                     console.bg[y, x] = colors['dark_wall']
                 else:
