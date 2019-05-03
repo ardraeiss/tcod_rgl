@@ -2,6 +2,7 @@
 
 class Tile:
     """ A tile of the map. May block path and/or sight """
+
     def __init__(self, blocked, block_sight=None):
         self.blocked = blocked
 
@@ -9,3 +10,5 @@ class Tile:
             block_sight = blocked
 
         self.block_sight = block_sight
+
+        self.explored = False

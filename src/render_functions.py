@@ -4,23 +4,33 @@ import tcod
 colors = {
     'dark_wall': tcod.Color(0, 0, 100),
     'dark_ground': tcod.Color(50, 50, 150),
+    'light_wall': tcod.Color(130, 110, 50),
+    'light_ground': tcod.Color(200, 180, 50),
 }
 
 
-def render_all(main_console, console, entities, game_map, screen_width, screen_height):
+def render_all(main_console, console, entities, game_map, fov_map, screen_width, screen_height):
     # Draw map tiles
     for y in range(game_map.height):
         for x in range(game_map.width):
+            visible = fov_map.fov[y, x]
             wall = game_map.tiles[x][y].block_sight
 
-            if wall:
-                console.bg[y, x] = colors['dark_wall']
-            else:
-                console.bg[y, x] = colors['dark_ground']
+            if visible:
+                if wall:
+                    console.bg[y, x] = colors['light_wall']
+                else:
+                    console.bg[y, x] = colors['light_ground']
+                game_map.tiles[x][y].explored = True
+            elif game_map.tiles[x][y].explored:
+                if wall:
+                    console.bg[y, x] = colors['dark_wall']
+                else:
+                    console.bg[y, x] = colors['dark_ground']
 
     # Draw all entities
     for entry in entities:
-        draw_entity(console, entry)
+        draw_entity(console, entry, fov_map)
 
     tcod.console_blit(console, 0, 0, screen_width, screen_height, main_console, 0, 0)
 
@@ -36,9 +46,10 @@ def clean_all(console, entities):
         clear_entity(console, entry)
 
 
-def draw_entity(console, entry):
+def draw_entity(console, entry, fov_map):
     # put entity character on screen
-    tcod.console_put_char_ex(console, entry.x, entry.y, entry.char, entry.color, tcod.black)
+    if fov_map.fov[entry.y, entry.x]:
+        tcod.console_put_char_ex(console, entry.x, entry.y, entry.char, entry.color, tcod.black)
 
 
 def clear_entity(console, entry):
