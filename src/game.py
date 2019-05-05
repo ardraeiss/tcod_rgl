@@ -31,7 +31,7 @@ class Game:
 
         self.world = World()
 
-        self.player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
+        self.player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white, "Player")
 
         self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
         self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
