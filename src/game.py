@@ -51,7 +51,6 @@ class Game:
                 self.fullscreen,
                 order="F")
         console = tcod.console_new(self.screen_width, self.screen_height)
-        console.print_(x=0, y=0, string='Hello World!')
 
         fov_recompute = True
 
