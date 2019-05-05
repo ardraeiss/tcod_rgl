@@ -100,6 +100,18 @@ class Game:
         destination_x = self.player.x + dx
         destination_y = self.player.y + dy
         if not self.game_map.is_blocked(destination_x, destination_y):
-            self.player.move(dx, dy)
-            fov_recompute = True
+            target = self.get_blocking_entities_at_location(destination_x, destination_y)
+            if target:
+                print("You have kicked the {} in the shins, much to its annoyance!".
+                      format(target.name))
+            else:
+                self.player.move(dx, dy)
+                fov_recompute = True
         return fov_recompute
+
+    def get_blocking_entities_at_location(self, destination_x, destination_y):
+        for entity in self.entities:
+            if entity.blocks_movement and entity.x == destination_x and entity.y == destination_y:
+                return entity
+
+        return None
