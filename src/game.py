@@ -40,27 +40,27 @@ class Game:
 
         self.fov_map = initialize_fov(self.game_map)
 
+        self.game_state = GameStates.PLAYERS_TURN
+
+        # TODO extract console handler class
+        self.main_console = tcod.console_init_root(
+                self.screen_width,
+                self.screen_height,
+                self.title,
+                self.fullscreen,
+                order="F")
+        self.console = tcod.console_new(self.screen_width, self.screen_height)
+
     def run(self) -> bool:
         print("Running")
 
         fov_light_walls = True
         fov_algorithm = tcod.FOV_SHADOW
 
-        # TODO extract console handler class
-        main_console = tcod.console_init_root(
-                self.screen_width,
-                self.screen_height,
-                self.title,
-                self.fullscreen,
-                order="F")
-        console = tcod.console_new(self.screen_width, self.screen_height)
-
         fov_recompute = True
 
         key = tcod.Key()
         mouse = tcod.Mouse()
-
-        game_state = GameStates.PLAYERS_TURN
 
         while not tcod.console_is_window_closed():
             tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
@@ -70,7 +70,7 @@ class Game:
                               self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
-            render_all(main_console, console, self.entities, self.game_map, self.fov_map,
+            render_all(self.main_console, self.console, self.entities, self.game_map, self.fov_map,
                        self.screen_width, self.screen_height)
 
             action = handle_keys(key)
@@ -84,16 +84,16 @@ class Game:
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
 
-            if action.get('move') and game_state == GameStates.PLAYERS_TURN:
+            if self.game_state == GameStates.PLAYERS_TURN:
                 fov_recompute |= self.move_player(action)
-                game_state = GameStates.ENEMY_TURN
+            elif self.game_state == GameStates.ENEMY_TURN:
+                self.do_entities_actions()
 
-            if game_state == GameStates.ENEMY_TURN:
-                for entity in self.entities:
-                    if entity != self.player:
-                        print('The ' + entity.name + ' ponders the meaning of its existence.')
-
-                game_state = GameStates.PLAYERS_TURN
+    def do_entities_actions(self):
+        for entity in self.entities:
+            if entity != self.player:
+                print('The ' + entity.name + ' ponders the meaning of its existence.')
+        self.game_state = GameStates.PLAYERS_TURN
 
     def change_light_radius(self, action) -> bool:
         a_light_radius = action.get('light_radius')
@@ -119,6 +119,8 @@ class Game:
             else:
                 self.player.move(dx, dy)
                 fov_recompute = True
+
+        self.game_state = GameStates.ENEMY_TURN
         return fov_recompute
 
     def get_blocking_entities_at_location(self, destination_x, destination_y):
