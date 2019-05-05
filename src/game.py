@@ -21,6 +21,8 @@ class Game:
     room_max_size = 10
     room_min_size = 6
     max_rooms = 30
+    max_monsters_per_room = 3
+
     fov_radius = 4
 
     def __init__(self) -> None:
@@ -32,7 +34,7 @@ class Game:
         self.player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
 
         self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
-        self.entities = self.game_map.make_map(self.max_rooms, self.player, 2)
+        self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
         self.entities.append(self.player)
 
         self.fov_map = initialize_fov(self.game_map)
