@@ -3,6 +3,7 @@ import tcod
 from elements.entity import Entity
 from elements.world import World
 from fov_functions import initialize_fov, recompute_fov
+from game_states import GameStates
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
 from render_functions import render_all
@@ -21,7 +22,7 @@ class Game:
     room_max_size = 10
     room_min_size = 6
     max_rooms = 30
-    max_monsters_per_room = 3
+    max_monsters_per_room = 2
 
     fov_radius = 4
 
@@ -59,6 +60,8 @@ class Game:
         key = tcod.Key()
         mouse = tcod.Mouse()
 
+        game_state = GameStates.PLAYERS_TURN
+
         while not tcod.console_is_window_closed():
             tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
 
@@ -78,10 +81,19 @@ class Game:
             if a_exit:
                 return True
 
-            fov_recompute |= self.move_player(action)
-
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+
+            if action.get('move') and game_state == GameStates.PLAYERS_TURN:
+                fov_recompute |= self.move_player(action)
+                game_state = GameStates.ENEMY_TURN
+
+            if game_state == GameStates.ENEMY_TURN:
+                for entity in self.entities:
+                    if entity != self.player:
+                        print('The ' + entity.name + ' ponders the meaning of its existence.')
+
+                game_state = GameStates.PLAYERS_TURN
 
     def change_light_radius(self, action) -> bool:
         a_light_radius = action.get('light_radius')
