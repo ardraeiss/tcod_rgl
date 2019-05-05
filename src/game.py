@@ -29,11 +29,10 @@ class Game:
         self.world = World()
 
         self.player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white)
-        self.npc = Entity(int(self.screen_width / 2)-2, int(self.screen_height / 2)+5, 'r', tcod.dark_green)
-        self.entities = [self.npc, self.player]
 
         self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
-        self.game_map.make_map(self.max_rooms, self.player)
+        self.entities = self.game_map.make_map(self.max_rooms, self.player, 2)
+        self.entities.append(self.player)
 
         self.fov_map = initialize_fov(self.game_map)
 
@@ -89,8 +88,6 @@ class Game:
                 if not self.game_map.is_blocked(self.player.x + dx, self.player.y + dy):
                     self.player.move(dx, dy)
                     fov_recompute = True
-                if not self.game_map.is_blocked(self.npc.x + dx, self.npc.y):
-                    self.npc.move(dx, 0)
 
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
