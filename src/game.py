@@ -21,6 +21,7 @@ class Game:
     room_max_size = 10
     room_min_size = 6
     max_rooms = 30
+    fov_radius = 4
 
     def __init__(self) -> None:
         tcod.console_set_custom_font('./resources/fonts/arial12x12.png',
@@ -39,7 +40,6 @@ class Game:
     def run(self) -> bool:
         print("Running")
 
-        fov_radius = 4
         fov_light_walls = True
         fov_algorithm = tcod.FOV_SHADOW
 
@@ -62,31 +62,42 @@ class Game:
 
             if fov_recompute:
                 recompute_fov(self.fov_map, self.player.x, self.player.y,
-                              fov_radius, fov_light_walls, fov_algorithm)
+                              self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
             render_all(main_console, console, self.entities, self.game_map, self.fov_map,
                        self.screen_width, self.screen_height)
 
             action = handle_keys(key)
-            a_move = action.get('move')
             a_exit = action.get('exit')
             a_fullscreen = action.get('fullscreen')
-            a_light_radius = action.get('light_radius')
-
-            if a_light_radius:
-                fov_radius += a_light_radius
-                fov_radius = min(10, max(1, fov_radius))
-                fov_recompute = True
+            fov_recompute |= self.change_light_radius(action)
 
             if a_exit:
                 return True
 
-            if a_move:
-                dx, dy = a_move
-                if not self.game_map.is_blocked(self.player.x + dx, self.player.y + dy):
-                    self.player.move(dx, dy)
-                    fov_recompute = True
+            fov_recompute |= self.move_player(action)
 
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+
+    def change_light_radius(self, action) -> bool:
+        a_light_radius = action.get('light_radius')
+        if not a_light_radius:
+            return False
+        self.fov_radius = min(10, max(1, self.fov_radius + a_light_radius))
+        return True
+
+    def move_player(self, action) -> bool:
+        fov_recompute = False
+        a_move = action.get('move')
+        if not a_move:
+            return False
+
+        dx, dy = a_move
+        destination_x = self.player.x + dx
+        destination_y = self.player.y + dy
+        if not self.game_map.is_blocked(destination_x, destination_y):
+            self.player.move(dx, dy)
+            fov_recompute = True
+        return fov_recompute
