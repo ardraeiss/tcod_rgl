@@ -13,5 +13,5 @@ class BasicMonster:
             if monster.distance_to(target) >= 2:
                 monster.move_astar(target, entities, game_map)
 
-            elif target.fighter.hp > 0:
-                print('The {0} insults you! Your ego is damaged!'.format(monster.name))
+            elif target.is_alive():
+                monster.fighter.attack(target)

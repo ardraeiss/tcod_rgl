@@ -118,8 +118,7 @@ class Game:
         if not self.game_map.is_blocked(destination_x, destination_y):
             target = get_blocking_entities_at_location(self.entities, destination_x, destination_y)
             if target:
-                print("You have kicked the {} in the shins, much to its annoyance!".
-                      format(target.name))
+                self.player.fighter.attack(target)
             else:
                 self.player.move(dx, dy)
                 fov_recompute = True

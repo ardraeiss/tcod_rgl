@@ -17,6 +17,9 @@ class Entity:
         if self.ai:
             self.ai.set_owner(self)
 
+    def is_alive(self):
+        return self.fighter and self.fighter.hp > 0
+
     def move(self, dx, dy):
         self.x += dx
         self.y += dy
