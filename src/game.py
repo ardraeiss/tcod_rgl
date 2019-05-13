@@ -55,6 +55,8 @@ class Game:
                 order="F")
         self.console = tcod.console_new(self.screen_width, self.screen_height)
 
+        self.player_turn_results = []
+
     def run(self) -> bool:
         print("Running")
 
@@ -90,13 +92,39 @@ class Game:
 
             if self.game_state == GameStates.PLAYERS_TURN:
                 fov_recompute |= self.move_player(action)
-            elif self.game_state == GameStates.ENEMY_TURN:
+
+            self.flush_turn_log()
+
+            if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
+
+    def flush_turn_log(self):
+        for player_turn_result in self.player_turn_results:
+            message = player_turn_result.get('message')
+            dead_entity = player_turn_result.get('dead')
+
+            if message:
+                print(message)
+
+            if dead_entity:
+                pass  # We'll do something here momentarily
+        self.player_turn_results = []
 
     def do_entities_actions(self):
         for entity in self.entities:
             if entity != self.player:
-                entity.ai.take_turn(self.player, self.fov_map, self.game_map, self.entities)
+                enemy_turn_results = entity.ai.take_turn(self.player, self.fov_map, self.game_map, self.entities)
+
+                for enemy_turn_result in enemy_turn_results:
+                    message = enemy_turn_result.get('message')
+                    dead_entity = enemy_turn_result.get('dead')
+
+                    if message:
+                        print(message)
+
+                    if dead_entity:
+                        pass
+
         self.game_state = GameStates.PLAYERS_TURN
 
     def change_light_radius(self, action) -> bool:
@@ -118,7 +146,8 @@ class Game:
         if not self.game_map.is_blocked(destination_x, destination_y):
             target = get_blocking_entities_at_location(self.entities, destination_x, destination_y)
             if target:
-                self.player.fighter.attack(target)
+                attack_results = self.player.fighter.attack(target)
+                self.player_turn_results.extend(attack_results)
             else:
                 self.player.move(dx, dy)
                 fov_recompute = True

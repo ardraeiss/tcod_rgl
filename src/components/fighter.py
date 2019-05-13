@@ -12,19 +12,32 @@ class Fighter:
         self.owner = owner
 
     def take_damage(self, amount):
+        results = []
+
         self.hp -= amount
 
+        if self.hp <= 0:
+            results.append({'dead': self.owner})
+
+        return results
+
     def attack(self, target):
+        results = []
+
         damage = self.power - target.fighter.defense
 
         if not target.is_alive():
-            print("{} kicks dead body of {}".format(self.owner.name.capitalize(), target.name))
-            return
+            print("{} kicks the dead body of {}".format(self.owner.name.capitalize(), target.name))
 
-        if damage > 0:
-            target.fighter.take_damage(damage)
-            print('{0} attacks {1} for {2} hit points. {3} left'.
-                  format(self.owner.name.capitalize(), target.name, damage, target.fighter.hp))
-            return
+        else:
+            if damage > 0:
+                target.fighter.take_damage(damage)
+                results.append({'message': '{0} attacks {1} for {2} hit points. {3} left'.format(
+                    self.owner.name.capitalize(), target.name, damage, target.fighter.hp)})
+                results.extend(target.fighter.take_damage(damage))
 
-        print('{0} attacks {1} but does no damage.'.format(self.owner.name.capitalize(), target.name))
+            else:
+                results.append({'message': '{0} attacks {1} but does no damage.'.format(
+                    self.owner.name.capitalize(), target.name)})
+
+        return results
