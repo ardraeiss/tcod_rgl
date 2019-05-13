@@ -136,6 +136,12 @@ class Game:
 
     def move_player(self, action) -> bool:
         fov_recompute = False
+
+        rest = action.get('rest')
+        if rest:
+            self.game_state = GameStates.ENEMY_TURN
+            return False
+
         a_move = action.get('move')
         if not a_move:
             return False

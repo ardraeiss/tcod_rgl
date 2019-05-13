@@ -19,6 +19,8 @@ def handle_keys(key):
         return {'move': (1, 1)}
     if key.vk == tcod.KEY_KP1:
         return {'move': (-1, 1)}
+    if key.vk == tcod.KEY_KP5:
+        return {'rest': (True, 1)}
 
     if key.vk == tcod.KEY_KPADD or key.vk == '+':
         return {'light_radius': 1}
