@@ -1,12 +1,13 @@
 import tcod
 
-from elements.entity import Entity
+from elements.entity import Entity, get_blocking_entities_at_location
 from elements.world import World
 from fov_functions import initialize_fov, recompute_fov
 from game_states import GameStates
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
 from render_functions import render_all
+from components.fighter import Fighter
 
 
 class Game:
@@ -32,7 +33,10 @@ class Game:
 
         self.world = World()
 
-        self.player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white, "Player")
+        fighter_component = Fighter(hp=30, defense=2, power=5)
+        self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
+                             char='@', color=tcod.white, name="Player",
+                             fighter=fighter_component)
 
         self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
         self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
@@ -92,7 +96,7 @@ class Game:
     def do_entities_actions(self):
         for entity in self.entities:
             if entity != self.player:
-                print('The ' + entity.name + ' ponders the meaning of its existence.')
+                entity.ai.take_turn(self.player, self.fov_map, self.game_map, self.entities)
         self.game_state = GameStates.PLAYERS_TURN
 
     def change_light_radius(self, action) -> bool:
@@ -112,7 +116,7 @@ class Game:
         destination_x = self.player.x + dx
         destination_y = self.player.y + dy
         if not self.game_map.is_blocked(destination_x, destination_y):
-            target = self.get_blocking_entities_at_location(destination_x, destination_y)
+            target = get_blocking_entities_at_location(self.entities, destination_x, destination_y)
             if target:
                 print("You have kicked the {} in the shins, much to its annoyance!".
                       format(target.name))
@@ -122,10 +126,3 @@ class Game:
 
         self.game_state = GameStates.ENEMY_TURN
         return fov_recompute
-
-    def get_blocking_entities_at_location(self, destination_x, destination_y):
-        for entity in self.entities:
-            if entity.blocks_movement and entity.x == destination_x and entity.y == destination_y:
-                return entity
-
-        return None
