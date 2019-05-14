@@ -1,5 +1,13 @@
 import tcod
 
+from enum import Enum
+
+
+class RenderOrder(Enum):
+    CORPSE = 1
+    ITEM = 2
+    ACTOR = 3
+
 
 colors = {
     'dark_wall': tcod.Color(0, 0, 100),
@@ -29,7 +37,9 @@ def render_all(main_console, console, entities, player, game_map, fov_map, scree
                     console.bg[y, x] = colors['dark_ground']
 
     # Draw all entities
-    for entry in entities:
+    entities_in_render_order = sorted(entities, key=lambda e: e.render_order.value)
+
+    for entry in entities_in_render_order:
         draw_entity(console, entry, fov_map)
 
     tcod.console_print_ex(console, 1, screen_height - 2, tcod.BKGND_NONE, tcod.LEFT,

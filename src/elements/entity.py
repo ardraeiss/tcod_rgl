@@ -1,17 +1,23 @@
 import math
 import tcod
+from render_functions import RenderOrder
 
 
 class Entity:
-    def __init__(self, x, y, char, color, name, blocks_movement=True, fighter=None, ai=None):
+    def __init__(self, x, y, char, color, name, blocks_movement=True,
+                 render_order=RenderOrder.CORPSE, fighter=None, ai=None):
+        self.name = name
+
         self.x = x
         self.y = y
         self.char = char
         self.color = color
-        self.name = name
+        self.render_order = render_order
+
         self.blocks_movement = blocks_movement
         self.fighter = fighter
         self.ai = ai
+
         if self.fighter:
             self.fighter.set_owner(self)
         if self.ai:

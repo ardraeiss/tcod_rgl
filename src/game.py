@@ -6,7 +6,7 @@ from fov_functions import initialize_fov, recompute_fov
 from game_states import GameStates
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
-from render_functions import render_all
+from render_functions import render_all, RenderOrder
 from components.fighter import Fighter
 from death_functions import kill_monster, kill_player
 
@@ -37,7 +37,7 @@ class Game:
         fighter_component = Fighter(hp=30, defense=2, power=5)
         self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
                              char='@', color=tcod.white, name="Player",
-                             fighter=fighter_component)
+                             fighter=fighter_component, render_order=RenderOrder.ACTOR)
 
         self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
         self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)

@@ -7,6 +7,7 @@ from components.fighter import Fighter
 from elements.entity import Entity
 from .tile import Tile
 from .rect import Rect
+from render_functions import RenderOrder
 
 
 class GameMap:
@@ -116,11 +117,13 @@ class GameMap:
                     fighter_component = Fighter(hp=10, defense=0, power=3)
                     ai_component = BasicMonster()
                     monster = Entity(x, y, 'o', tcod.desaturated_green, "Orc",
+                                     render_order=RenderOrder.ACTOR,
                                      fighter=fighter_component, ai=ai_component)
                 else:
                     fighter_component = Fighter(hp=16, defense=1, power=4)
                     ai_component = BasicMonster()
                     monster = Entity(x, y, 'T', tcod.darker_green, "Troll",
+                                     render_order=RenderOrder.ACTOR,
                                      fighter=fighter_component, ai=ai_component)
 
                 entities.append(monster)
