@@ -133,14 +133,11 @@ class Game:
 
                     if dead_entity:
                         if dead_entity == self.player:
-                            message, game_state = kill_player(dead_entity)
+                            message, self.game_state = kill_player(dead_entity)
                         else:
                             message = kill_monster(dead_entity)
 
                         print(message)
-
-                        if self.game_state == GameStates.PLAYER_DEAD:
-                            break
 
                     if self.game_state == GameStates.PLAYER_DEAD:
                         break
@@ -148,7 +145,8 @@ class Game:
             if self.game_state == GameStates.PLAYER_DEAD:
                 break
 
-        self.game_state = GameStates.PLAYERS_TURN
+        if self.game_state != GameStates.PLAYER_DEAD:
+            self.game_state = GameStates.PLAYERS_TURN
 
     def change_light_radius(self, action) -> bool:
         a_light_radius = action.get('light_radius')
