@@ -9,7 +9,7 @@ colors = {
 }
 
 
-def render_all(main_console, console, entities, game_map, fov_map, screen_width, screen_height):
+def render_all(main_console, console, entities, player, game_map, fov_map, screen_width, screen_height):
     # Draw map tiles
     for y in range(game_map.height):
         for x in range(game_map.width):
@@ -31,6 +31,9 @@ def render_all(main_console, console, entities, game_map, fov_map, screen_width,
     # Draw all entities
     for entry in entities:
         draw_entity(console, entry, fov_map)
+
+    tcod.console_print_ex(console, 1, screen_height - 2, tcod.BKGND_NONE, tcod.LEFT,
+                          'HP: {0:02}/{1:02}'.format(player.fighter.hp, player.fighter.max_hp))
 
     tcod.console_blit(console, 0, 0, screen_width, screen_height, main_console, 0, 0)
 

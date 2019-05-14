@@ -2,6 +2,8 @@ import tcod
 
 
 def handle_keys(key):
+    key_char = chr(key.c)
+
     # Movement keys
     if key.vk in (tcod.KEY_UP, tcod.KEY_KP8):
         return {'move': (0, -1)}
@@ -22,9 +24,9 @@ def handle_keys(key):
     if key.vk == tcod.KEY_KP5:
         return {'rest': (True, 1)}
 
-    if key.vk == tcod.KEY_KPADD or key.vk == '+':
+    if key.vk == tcod.KEY_KPADD or key_char == '+':
         return {'light_radius': 1}
-    if key.vk == tcod.KEY_KPSUB or key.vk == '-':
+    if key.vk == tcod.KEY_KPSUB or key_char == '-':
         return {'light_radius': -1}
 
     if key.vk in (tcod.KEY_ENTER, tcod.KEY_KPENTER) and key.lalt:

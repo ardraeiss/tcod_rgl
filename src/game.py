@@ -8,6 +8,7 @@ from input_handlers import handle_keys
 from map_objects.game_map import GameMap
 from render_functions import render_all
 from components.fighter import Fighter
+from death_functions import kill_monster, kill_player
 
 
 class Game:
@@ -76,7 +77,9 @@ class Game:
                               self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
-            render_all(self.main_console, self.console, self.entities, self.game_map, self.fov_map,
+            render_all(self.main_console, self.console,
+                       self.entities, self.player,
+                       self.game_map, self.fov_map,
                        self.screen_width, self.screen_height)
 
             action = handle_keys(key)
@@ -107,12 +110,18 @@ class Game:
                 print(message)
 
             if dead_entity:
-                pass  # We'll do something here momentarily
+                if dead_entity == self.player:
+                    message, game_state = kill_player(dead_entity)
+                else:
+                    message = kill_monster(dead_entity)
+
+                print(message)
+
         self.player_turn_results = []
 
     def do_entities_actions(self):
         for entity in self.entities:
-            if entity != self.player:
+            if entity.ai:
                 enemy_turn_results = entity.ai.take_turn(self.player, self.fov_map, self.game_map, self.entities)
 
                 for enemy_turn_result in enemy_turn_results:
@@ -123,7 +132,21 @@ class Game:
                         print(message)
 
                     if dead_entity:
-                        pass
+                        if dead_entity == self.player:
+                            message, game_state = kill_player(dead_entity)
+                        else:
+                            message = kill_monster(dead_entity)
+
+                        print(message)
+
+                        if self.game_state == GameStates.PLAYER_DEAD:
+                            break
+
+                    if self.game_state == GameStates.PLAYER_DEAD:
+                        break
+
+            if self.game_state == GameStates.PLAYER_DEAD:
+                break
 
         self.game_state = GameStates.PLAYERS_TURN
 
@@ -151,7 +174,7 @@ class Game:
         destination_y = self.player.y + dy
         if not self.game_map.is_blocked(destination_x, destination_y):
             target = get_blocking_entities_at_location(self.entities, destination_x, destination_y)
-            if target:
+            if target and target.ai:
                 attack_results = self.player.fighter.attack(target)
                 self.player_turn_results.extend(attack_results)
             else:

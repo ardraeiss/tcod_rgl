@@ -5,8 +5,8 @@ import tcod
 from components.ai import BasicMonster
 from components.fighter import Fighter
 from elements.entity import Entity
-from map_objects.tile import Tile
-from rect import Rect
+from .tile import Tile
+from .rect import Rect
 
 
 class GameMap:
