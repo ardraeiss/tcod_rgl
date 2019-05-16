@@ -78,7 +78,7 @@ class GameMap:
                 if new_room.intersect(other_room):
                     break
             else:
-                entities.extend(self.place_entities(new_room, max_monsters_per_room))
+                entities.extend(place_entities(new_room, max_monsters_per_room))
                 self.rooms.append(new_room)
 
                 # center coordinates of new room, will be useful later
@@ -102,36 +102,44 @@ class GameMap:
 
                 num_rooms += 1
 
-        return rooms, entities
-
-    def place_entities(self, room, max_monsters_per_room):
-        entities = []
-        # Get a random number of monsters
-        number_of_monsters = randint(0, max_monsters_per_room)
-
-        for i in range(number_of_monsters):
-            # Choose a random location in the room
-            x = randint(room.x1 + 1, room.x2 - 1)
-            y = randint(room.y1 + 1, room.y2 - 1)
-
-            if not any([entity for entity in entities if entity.x == x and entity.y == y]):
-                if randint(0, 100) < 80:
-                    fighter_component = Fighter(hp=10, defense=0, power=3)
-                    ai_component = BasicMonster()
-                    monster = Entity(x, y, 'o', tcod.desaturated_green, "Orc",
-                                     render_order=RenderOrder.ACTOR,
-                                     fighter=fighter_component, ai=ai_component)
-                else:
-                    fighter_component = Fighter(hp=16, defense=1, power=4)
-                    ai_component = BasicMonster()
-                    monster = Entity(x, y, 'T', tcod.darker_green, "Troll",
-                                     render_order=RenderOrder.ACTOR,
-                                     fighter=fighter_component, ai=ai_component)
-
-                entities.append(monster)
-        return entities
-
         return entities
 
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
+
+
+def place_entities(room, max_monsters_per_room):
+    entities = []
+    # Get a random number of monsters
+    number_of_monsters = randint(0, max_monsters_per_room)
+
+    for i in range(number_of_monsters):
+        # Choose a random location in the room
+        x = randint(room.x1 + 1, room.x2 - 1)
+        y = randint(room.y1 + 1, room.y2 - 1)
+
+        if not any([entity for entity in entities if entity.x == x and entity.y == y]):
+            if randint(0, 100) < 80:
+                monster = spawn_orc(x, y)
+            else:
+                monster = spawn_troll(x, y)
+
+            entities.append(monster)
+
+    return entities
+
+
+def spawn_troll(x, y):
+    monster = Entity(x, y, 'T', tcod.darker_green, "Troll",
+                     render_order=RenderOrder.ACTOR)
+    monster.set_ai(BasicMonster())
+    monster.set_combat_info(Fighter(hp=16, defense=1, power=4))
+    return monster
+
+
+def spawn_orc(x, y):
+    monster = Entity(x, y, 'o', tcod.desaturated_green, "Orc",
+                     render_order=RenderOrder.ACTOR)
+    monster.set_ai(BasicMonster())
+    monster.set_combat_info(Fighter(hp=10, defense=0, power=3))
+    return monster

@@ -5,7 +5,7 @@ from render_functions import RenderOrder
 
 class Entity:
     def __init__(self, x, y, char, color, name, blocks_movement=True,
-                 render_order=RenderOrder.CORPSE, fighter=None, ai=None):
+                 render_order=RenderOrder.CORPSE):
         self.name = name
 
         self.x = x
@@ -15,11 +15,16 @@ class Entity:
         self.render_order = render_order
 
         self.blocks_movement = blocks_movement
-        self.fighter = fighter
-        self.ai = ai
+        self.fighter = None
+        self.ai = None
 
+    def set_combat_info(self, fighter=None):
+        self.fighter = fighter
         if self.fighter:
             self.fighter.set_owner(self)
+
+    def set_ai(self, ai=None):
+        self.ai = ai
         if self.ai:
             self.ai.set_owner(self)
 

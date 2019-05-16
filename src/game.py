@@ -34,12 +34,11 @@ class Game:
 
         self.world = World()
 
-        fighter_component = Fighter(hp=30, defense=2, power=5)
         self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
 
         self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
-                             char='@', color=tcod.white, name="Player",
-                             fighter=fighter_component, render_order=RenderOrder.ACTOR)
+                             char='@', color=tcod.white, name="Player", render_order=RenderOrder.ACTOR)
+        self.player.set_combat_info(Fighter(hp=30, defense=2, power=5))
 
         self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
         self.entities.append(self.player)
