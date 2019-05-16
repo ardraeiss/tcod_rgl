@@ -5,7 +5,7 @@ from render_functions import RenderOrder
 
 class Entity:
     def __init__(self, x, y, char, color, name, blocks_movement=True,
-                 render_order=RenderOrder.CORPSE, fighter=None, ai=None):
+                 render_order=RenderOrder.CORPSE):
         self.name = name
 
         self.x = x
@@ -15,11 +15,16 @@ class Entity:
         self.render_order = render_order
 
         self.blocks_movement = blocks_movement
-        self.fighter = fighter
-        self.ai = ai
+        self.fighter = None
+        self.ai = None
 
+    def set_combat_info(self, fighter=None):
+        self.fighter = fighter
         if self.fighter:
             self.fighter.set_owner(self)
+
+    def set_ai(self, ai=None):
+        self.ai = ai
         if self.ai:
             self.ai.set_owner(self)
 
@@ -49,13 +54,13 @@ class Entity:
 
     def move_astar(self, target, entities: list, game_map):
         # Create a FOV map that has the dimensions of the map
-        fov = tcod.map_new(game_map.width, game_map.height)
+        fov = tcod.map.Map(game_map.width, game_map.height)
 
         # Scan the current map each turn and set all the walls as unwalkable
         for y1 in range(game_map.height):
             for x1 in range(game_map.width):
-                tcod.map_set_properties(fov, x1, y1, not game_map.tiles[x1][y1].block_sight,
-                                           not game_map.tiles[x1][y1].blocked)
+                fov.transparent[y1, x1] = not game_map.tiles[x1][y1].block_sight
+                fov.walkable[y1, x1] = not game_map.tiles[x1][y1].blocked
 
         # Scan all the objects to see if there are objects that must be navigated around
         # Check also that the object isn't self or the target (so that the start and the end points are free)
@@ -63,7 +68,8 @@ class Entity:
         for entity in entities:
             if entity.blocks_movement and entity != self and entity != target:
                 # Set the tile as a wall so it must be navigated around
-                tcod.map_set_properties(fov, entity.x, entity.y, True, False)
+                fov.transparent[entity.y, entity.x] = True
+                fov.walkable[entity.y, entity.x] = False
 
         # Allocate a A* path
         # The 1.41 is the normal diagonal cost of moving, it can be set as 0.0 if diagonal moves are prohibited
