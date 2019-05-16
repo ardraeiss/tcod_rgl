@@ -1,12 +1,14 @@
 import tcod
 
-from elements.entity import Entity
+from elements.entity import Entity, get_blocking_entities_at_location
 from elements.world import World
 from fov_functions import initialize_fov, recompute_fov
 from game_states import GameStates
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
-from render_functions import render_all
+from render_functions import render_all, RenderOrder
+from components.fighter import Fighter
+from death_functions import kill_monster, kill_player
 
 
 class Game:
@@ -32,7 +34,10 @@ class Game:
 
         self.world = World()
 
-        self.player = Entity(int(self.screen_width / 2), int(self.screen_height / 2), '@', tcod.white, "Player")
+        fighter_component = Fighter(hp=30, defense=2, power=5)
+        self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
+                             char='@', color=tcod.white, name="Player",
+                             fighter=fighter_component, render_order=RenderOrder.ACTOR)
 
         self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
         self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
@@ -50,6 +55,8 @@ class Game:
                 self.fullscreen,
                 order="F")
         self.console = tcod.console_new(self.screen_width, self.screen_height)
+
+        self.player_turn_results = []
 
     def run(self) -> bool:
         print("Running")
@@ -70,7 +77,9 @@ class Game:
                               self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
-            render_all(self.main_console, self.console, self.entities, self.game_map, self.fov_map,
+            render_all(self.main_console, self.console,
+                       self.entities, self.player,
+                       self.game_map, self.fov_map,
                        self.screen_width, self.screen_height)
 
             action = handle_keys(key)
@@ -86,14 +95,58 @@ class Game:
 
             if self.game_state == GameStates.PLAYERS_TURN:
                 fov_recompute |= self.move_player(action)
-            elif self.game_state == GameStates.ENEMY_TURN:
+
+            self.flush_turn_log()
+
+            if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
+
+    def flush_turn_log(self):
+        for player_turn_result in self.player_turn_results:
+            message = player_turn_result.get('message')
+            dead_entity = player_turn_result.get('dead')
+
+            if message:
+                print(message)
+
+            if dead_entity:
+                if dead_entity == self.player:
+                    message, game_state = kill_player(dead_entity)
+                else:
+                    message = kill_monster(dead_entity)
+
+                print(message)
+
+        self.player_turn_results = []
 
     def do_entities_actions(self):
         for entity in self.entities:
-            if entity != self.player:
-                print('The ' + entity.name + ' ponders the meaning of its existence.')
-        self.game_state = GameStates.PLAYERS_TURN
+            if entity.ai:
+                enemy_turn_results = entity.ai.take_turn(self.player, self.fov_map, self.game_map, self.entities)
+
+                for enemy_turn_result in enemy_turn_results:
+                    message = enemy_turn_result.get('message')
+                    dead_entity = enemy_turn_result.get('dead')
+
+                    if message:
+                        print(message)
+
+                    if dead_entity:
+                        if dead_entity == self.player:
+                            message, self.game_state = kill_player(dead_entity)
+                        else:
+                            message = kill_monster(dead_entity)
+
+                        print(message)
+
+                    if self.game_state == GameStates.PLAYER_DEAD:
+                        break
+
+            if self.game_state == GameStates.PLAYER_DEAD:
+                break
+
+        if self.game_state != GameStates.PLAYER_DEAD:
+            self.game_state = GameStates.PLAYERS_TURN
 
     def change_light_radius(self, action) -> bool:
         a_light_radius = action.get('light_radius')
@@ -104,6 +157,12 @@ class Game:
 
     def move_player(self, action) -> bool:
         fov_recompute = False
+
+        rest = action.get('rest')
+        if rest:
+            self.game_state = GameStates.ENEMY_TURN
+            return False
+
         a_move = action.get('move')
         if not a_move:
             return False
@@ -112,20 +171,13 @@ class Game:
         destination_x = self.player.x + dx
         destination_y = self.player.y + dy
         if not self.game_map.is_blocked(destination_x, destination_y):
-            target = self.get_blocking_entities_at_location(destination_x, destination_y)
-            if target:
-                print("You have kicked the {} in the shins, much to its annoyance!".
-                      format(target.name))
+            target = get_blocking_entities_at_location(self.entities, destination_x, destination_y)
+            if target and target.ai:
+                attack_results = self.player.fighter.attack(target)
+                self.player_turn_results.extend(attack_results)
             else:
                 self.player.move(dx, dy)
                 fov_recompute = True
 
         self.game_state = GameStates.ENEMY_TURN
         return fov_recompute
-
-    def get_blocking_entities_at_location(self, destination_x, destination_y):
-        for entity in self.entities:
-            if entity.blocks_movement and entity.x == destination_x and entity.y == destination_y:
-                return entity
-
-        return None
