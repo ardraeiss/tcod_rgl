@@ -20,6 +20,8 @@ class GameMap:
 
         self.tiles = self.initialize_tiles()
 
+        self.rooms = []
+
     def initialize_tiles(self):
         """ Fill map with impassable walls """
         tiles = [[Tile(True) for _ in range(self.height)] for _ in range(self.width)]
@@ -47,18 +49,18 @@ class GameMap:
     ##
     # Map creation
     def make_map(self, max_rooms, player, max_monsters_per_room):
-        rooms, entities = self.generate_rooms(self.width, self.height, max_rooms, max_monsters_per_room)
+        entities = self.generate_rooms(self.width, self.height, max_rooms, max_monsters_per_room)
 
         # the first room is where the player starts at
-        player.x, player.y = rooms[0].center()
+        player.x, player.y = self.rooms[0].center()
 
-        for room in rooms:
+        for room in self.rooms:
             self.create_room(room)
 
         return entities
 
     def generate_rooms(self, map_width, map_height, max_rooms, max_monsters_per_room):
-        rooms = []
+        self.rooms = []
         entities = []
         num_rooms = 0
 
@@ -72,12 +74,12 @@ class GameMap:
 
             new_room = Rect(x, y, w, h)
             # run through the other rooms and see if they intersect with this one
-            for other_room in rooms:
+            for other_room in self.rooms:
                 if new_room.intersect(other_room):
                     break
             else:
                 entities.extend(self.place_entities(new_room, max_monsters_per_room))
-                rooms.append(new_room)
+                self.rooms.append(new_room)
 
                 # center coordinates of new room, will be useful later
                 new_x, new_y = new_room.center()
@@ -86,7 +88,7 @@ class GameMap:
                     # connect all rooms after the first to the previous room with a tunnel
 
                     # center coordinates of previous room
-                    (prev_x, prev_y) = rooms[num_rooms - 1].center()
+                    (prev_x, prev_y) = self.rooms[num_rooms - 1].center()
 
                     # flip a coin (random number that is either 0 or 1)
                     if randint(0, 1) == 1:
@@ -127,6 +129,7 @@ class GameMap:
                                      fighter=fighter_component, ai=ai_component)
 
                 entities.append(monster)
+        return entities
 
         return entities
 
