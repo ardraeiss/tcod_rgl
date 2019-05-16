@@ -18,8 +18,13 @@ class Game:
 
     screen_width = 80
     screen_height = 50
+
+    bar_width = 20
+    panel_height = 7
+    panel_y = screen_height - panel_height
+
     map_width = 80
-    map_height = 45
+    map_height = 43
 
     room_max_size = 10
     room_min_size = 6
@@ -54,9 +59,11 @@ class Game:
                 self.title,
                 self.fullscreen,
                 order="F")
-        self.draw_buffer = tcod.console_new(self.screen_width, self.screen_height)
-        self.render = Render(self.main_console, self.draw_buffer, self.game_map,
-                             self.screen_width, self.screen_height)
+        self.map_buffer = tcod.console.Console(self.screen_width, self.screen_height)
+        self.panel_buffer = tcod.console.Console(self.screen_width, self.panel_height)
+        self.render = Render(self.main_console, self.screen_width, self.screen_height)
+        self.render.set_map(self.game_map, self.map_buffer)
+        self.render.set_panel(self.panel_buffer, self.panel_height, self.bar_width, self.panel_y)
 
         self.player_turn_results = []
 
