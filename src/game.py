@@ -6,7 +6,7 @@ from fov_functions import initialize_fov, recompute_fov
 from game_states import GameStates
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
-from render_functions import render_all, RenderOrder
+from render_functions import Render, RenderOrder
 from components.fighter import Fighter
 from death_functions import kill_monster, kill_player
 
@@ -35,11 +35,12 @@ class Game:
         self.world = World()
 
         fighter_component = Fighter(hp=30, defense=2, power=5)
+        self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
+
         self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
                              char='@', color=tcod.white, name="Player",
                              fighter=fighter_component, render_order=RenderOrder.ACTOR)
 
-        self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
         self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
         self.entities.append(self.player)
 
@@ -54,7 +55,9 @@ class Game:
                 self.title,
                 self.fullscreen,
                 order="F")
-        self.console = tcod.console_new(self.screen_width, self.screen_height)
+        self.draw_buffer = tcod.console_new(self.screen_width, self.screen_height)
+        self.render = Render(self.main_console, self.draw_buffer, self.game_map,
+                             self.screen_width, self.screen_height)
 
         self.player_turn_results = []
 
@@ -77,10 +80,7 @@ class Game:
                               self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
-            render_all(self.main_console, self.console,
-                       self.entities, self.player,
-                       self.game_map, self.fov_map,
-                       self.screen_width, self.screen_height)
+            self.render.render_all(self.entities, self.player, self.fov_map,)
 
             action = handle_keys(key)
             a_exit = action.get('exit')
