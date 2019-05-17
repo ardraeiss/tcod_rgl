@@ -44,7 +44,7 @@ class Render:
     def set_message_log(self, message_log):
         self.message_log = message_log
 
-    def render_all(self, entities, player, fov_map):
+    def render_all(self, entities, player, fov_map, mouse):
         # Draw map tiles
         self.draw_tiles(fov_map)
 
@@ -72,6 +72,10 @@ class Render:
             y += 1
 
         self.render_bar(1, 1, 'HP', player.fighter.hp, player.fighter.max_hp)
+
+        tcod.console_set_default_foreground(self.panel_buffer, tcod.light_gray)
+        tcod.console_print_ex(self.panel_buffer, 1, 0, tcod.BKGND_NONE, tcod.LEFT,
+                              get_names_under_mouse(mouse, entities, fov_map))
 
         tcod.console_blit(self.panel_buffer, 0, 0, self.screen_width, self.panel_height,
                           self.main_console, 0, self.panel_y)
@@ -134,3 +138,13 @@ class Render:
     def clear_entity(self, entry):
         # erase the entity character
         tcod.console_put_char_ex(self.map_buffer, entry.x, entry.y, ' ', entry.color, tcod.black)
+
+
+def get_names_under_mouse(mouse, entities, fov_map):
+    (x, y) = (mouse.cx, mouse.cy)
+
+    names = [entity.name for entity in entities
+             if entity.x == x and entity.y == y and fov_map.fov[entity.y, entity.x]]
+    names = ', '.join(names)
+
+    return names.capitalize()

@@ -87,14 +87,14 @@ class Game:
         mouse = tcod.Mouse()
 
         while not tcod.console_is_window_closed():
-            tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
+            tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS | tcod.EVENT_MOUSE, key, mouse)
 
             if fov_recompute:
                 recompute_fov(self.fov_map, self.player.x, self.player.y,
                               self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
-            self.render.render_all(self.entities, self.player, self.fov_map,)
+            self.render.render_all(self.entities, self.player, self.fov_map, mouse)
 
             action = handle_keys(key)
             a_exit = action.get('exit')
