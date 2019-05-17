@@ -35,6 +35,7 @@ class Game:
     room_min_size = 6
     max_rooms = 30
     max_monsters_per_room = 2
+    max_items_per_room = 2
 
     fov_radius = 4
 
@@ -50,7 +51,8 @@ class Game:
                              char='@', color=tcod.white, name="Player", render_order=RenderOrder.ACTOR)
         self.player.set_combat_info(Fighter(hp=30, defense=2, power=5))
 
-        self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
+        self.entities = self.game_map.make_map(self.max_rooms, self.player,
+                                               self.max_monsters_per_room, self.max_items_per_room)
         self.entities.append(self.player)
 
         self.fov_map = initialize_fov(self.game_map)

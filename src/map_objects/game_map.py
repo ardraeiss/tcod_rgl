@@ -48,8 +48,9 @@ class GameMap:
 
     ##
     # Map creation
-    def make_map(self, max_rooms, player, max_monsters_per_room):
-        entities = self.generate_rooms(self.width, self.height, max_rooms, max_monsters_per_room)
+    def make_map(self, max_rooms, player, max_monsters_per_room, max_items_per_room):
+        entities = self.generate_rooms(self.width, self.height, max_rooms,
+                                       max_monsters_per_room, max_items_per_room)
 
         # the first room is where the player starts at
         player.x, player.y = self.rooms[0].center()
@@ -59,7 +60,7 @@ class GameMap:
 
         return entities
 
-    def generate_rooms(self, map_width, map_height, max_rooms, max_monsters_per_room):
+    def generate_rooms(self, map_width, map_height, max_rooms, max_monsters_per_room, max_items_per_room):
         self.rooms = []
         entities = []
         num_rooms = 0
@@ -79,6 +80,7 @@ class GameMap:
                     break
             else:
                 entities.extend(place_entities(new_room, max_monsters_per_room))
+                entities.extend(place_items(new_room, max_items_per_room))
                 self.rooms.append(new_room)
 
                 # center coordinates of new room, will be useful later
@@ -143,3 +145,20 @@ def spawn_orc(x, y):
     monster.set_ai(BasicMonster())
     monster.set_combat_info(Fighter(hp=10, defense=0, power=3))
     return monster
+
+
+def place_items(room, max_items_per_room):
+    items = []
+
+    number_of_items = randint(0, max_items_per_room)
+
+    for i in range(number_of_items):
+        x = randint(room.x1 + 1, room.x2 - 1)
+        y = randint(room.y1 + 1, room.y2 - 1)
+
+        if not any([entity for entity in items if entity.x == x and entity.y == y]):
+            item = Entity(x, y, '!', tcod.violet, 'Healing Potion', render_order=RenderOrder.ITEM)
+
+            items.append(item)
+
+    return items
