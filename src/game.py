@@ -1,5 +1,6 @@
 import tcod
 
+from components.inventory import Inventory
 from elements.entity import Entity, get_blocking_entities_at_location
 from elements.world import World
 from fov_functions import initialize_fov, recompute_fov
@@ -50,6 +51,7 @@ class Game:
         self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
                              char='@', color=tcod.white, name="Player", render_order=RenderOrder.ACTOR)
         self.player.set_combat_info(Fighter(hp=30, defense=2, power=5))
+        self.player.set_inventory(Inventory(26))
 
         self.entities = self.game_map.make_map(self.max_rooms, self.player,
                                                self.max_monsters_per_room, self.max_items_per_room)

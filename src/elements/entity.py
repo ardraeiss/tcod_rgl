@@ -17,6 +17,7 @@ class Entity:
         self.blocks_movement = blocks_movement
         self.fighter = None
         self.ai = None
+        self.inventory = None
 
     def set_combat_info(self, fighter=None):
         self.fighter = fighter
@@ -27,6 +28,11 @@ class Entity:
         self.ai = ai
         if self.ai:
             self.ai.set_owner(self)
+
+    def set_inventory(self, inventory=None):
+        self.inventory = inventory
+        if self.inventory:
+            self.inventory.set_owner(self)
 
     def is_alive(self):
         return self.fighter and self.fighter.hp > 0
