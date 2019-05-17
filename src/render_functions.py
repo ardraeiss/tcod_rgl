@@ -23,6 +23,7 @@ class Render:
         self.map_buffer = None
         self.panel_buffer = None
         self.game_map = None
+        self.message_log = None
         self.screen_width, self.screen_height = screen_width, screen_height
         self.panel_height = 0
         self.panel_width = 1
@@ -39,6 +40,9 @@ class Render:
         self.panel_height = panel_height
         self.panel_width = panel_width
         self.panel_y = panel_y
+
+    def set_message_log(self, message_log):
+        self.message_log = message_log
 
     def render_all(self, entities, player, fov_map):
         # Draw map tiles
@@ -59,6 +63,13 @@ class Render:
         # draw UI
         self.panel_buffer.default_bg = tcod.black
         self.panel_buffer.clear()
+
+        # Print the game messages, one line at a time
+        y = 1
+        for message in self.message_log.messages:
+            tcod.console_set_default_foreground(self.panel_buffer, message.color)
+            tcod.console_print_ex(self.panel_buffer, self.message_log.x, y, tcod.BKGND_NONE, tcod.LEFT, message.text)
+            y += 1
 
         self.render_bar(1, 1, 'HP', player.fighter.hp, player.fighter.max_hp)
 
