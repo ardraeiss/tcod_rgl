@@ -4,6 +4,7 @@ import tcod
 
 from components.ai import BasicMonster
 from components.fighter import Fighter
+from components.item import Item
 from elements.entity import Entity
 from .tile import Tile
 from .rect import Rect
@@ -158,7 +159,7 @@ def place_items(room, max_items_per_room):
 
         if not any([entity for entity in items if entity.x == x and entity.y == y]):
             item = Entity(x, y, '!', tcod.violet, 'Healing Potion', render_order=RenderOrder.ITEM)
-
+            item.set_item(Item())
             items.append(item)
 
     return items
