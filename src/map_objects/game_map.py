@@ -116,13 +116,20 @@ def place_entities(room, max_monsters_per_room):
     # Get a random number of monsters
     number_of_monsters = randint(0, max_monsters_per_room)
 
+    max_number_of_ubers = 1
+    number_of_ubers = 0
+
     for i in range(number_of_monsters):
         # Choose a random location in the room
         x = randint(room.x1 + 1, room.x2 - 1)
         y = randint(room.y1 + 1, room.y2 - 1)
 
         if not any([entity for entity in entities if entity.x == x and entity.y == y]):
-            if randint(0, 100) < 80:
+            chance = randint(0, 100)
+            if chance >= 90 and number_of_ubers < max_number_of_ubers:
+                monster = spawn_dragon(x, y)
+                number_of_ubers += 1
+            elif chance < 80:
                 monster = spawn_orc(x, y)
             else:
                 monster = spawn_troll(x, y)
@@ -145,6 +152,14 @@ def spawn_orc(x, y):
                      render_order=RenderOrder.ACTOR)
     monster.set_ai(BasicMonster())
     monster.set_combat_info(Fighter(hp=10, defense=0, power=3))
+    return monster
+
+
+def spawn_dragon(x, y):
+    monster = Entity(x, y, 'D', tcod.flame, "Dragon",
+                     render_order=RenderOrder.ACTOR)
+    monster.set_ai(BasicMonster())
+    monster.set_combat_info(Fighter(hp=20, defense=3, power=5))
     return monster
 
 
