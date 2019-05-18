@@ -4,7 +4,7 @@ from components.inventory import Inventory
 from elements.entity import Entity, get_blocking_entities_at_location
 from elements.world import World
 from fov_functions import initialize_fov, recompute_fov
-from game_messages import MessageLog
+from game_messages import MessageLog, Message
 from game_states import GameStates
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
@@ -113,29 +113,36 @@ class Game:
 
             if self.game_state == GameStates.PLAYERS_TURN:
                 fov_recompute |= self.move_player(action)
+                fov_recompute |= self.interact(action)
 
-            self.flush_turn_log()
+            self.evaluate_messages()
 
             if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
 
-    def flush_turn_log(self):
+            if self.game_state != GameStates.PLAYER_DEAD:
+                self.game_state = GameStates.PLAYERS_TURN
+
+    def evaluate_messages(self):
         for player_turn_result in self.player_turn_results:
             message = player_turn_result.get('message')
             dead_entity = player_turn_result.get('dead')
+            item_added = player_turn_result.get('item_added')
 
             if message:
                 self.message_log.add_message(message)
 
-            if dead_entity:
-                if dead_entity == self.player:
-                    message, game_state = kill_player(dead_entity)
-                else:
-                    message = kill_monster(dead_entity)
+            self.evaluate_dead_entity(dead_entity)
 
-                self.message_log.add_message(message)
+            if item_added:
+                self.pick_up_item(item_added)
 
         self.player_turn_results = []
+
+    def pick_up_item(self, item_added):
+        self.entities.remove(item_added)
+
+        self.game_state = GameStates.ENEMY_TURN
 
     def do_entities_actions(self):
         for entity in self.entities:
@@ -149,22 +156,21 @@ class Game:
                     if message:
                         self.message_log.add_message(message)
 
-                    if dead_entity:
-                        if dead_entity == self.player:
-                            message, self.game_state = kill_player(dead_entity)
-                        else:
-                            message = kill_monster(dead_entity)
-
-                        self.message_log.add_message(message)
+                    self.evaluate_dead_entity(dead_entity)
 
                     if self.game_state == GameStates.PLAYER_DEAD:
-                        break
+                        return
 
-            if self.game_state == GameStates.PLAYER_DEAD:
-                break
+    def evaluate_dead_entity(self, dead_entity):
+        if not dead_entity:
+            return
 
-        if self.game_state != GameStates.PLAYER_DEAD:
-            self.game_state = GameStates.PLAYERS_TURN
+        if dead_entity == self.player:
+            message, self.game_state = kill_player(dead_entity)
+        else:
+            message = kill_monster(dead_entity)
+
+        self.message_log.add_message(message)
 
     def change_light_radius(self, action) -> bool:
         a_light_radius = action.get('light_radius')
@@ -198,4 +204,23 @@ class Game:
                 fov_recompute = True
 
         self.game_state = GameStates.ENEMY_TURN
+        return fov_recompute
+
+    def interact(self, action) -> bool:
+        fov_recompute = False
+
+        pickup = action.get('pickup')
+        if not pickup:
+            return False
+
+        entity = next(
+            (e for e in self.entities if e.item and e.x == self.player.x and e.y == self.player.y),
+            None)
+        if entity:
+            pickup_results = self.player.inventory.add_item(entity)
+            self.player_turn_results.extend(pickup_results)
+            fov_recompute = True
+        else:
+            self.message_log.add_message(Message('There is nothing here to pick up.', tcod.yellow))
+
         return fov_recompute

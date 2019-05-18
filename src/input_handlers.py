@@ -24,6 +24,9 @@ def handle_keys(key):
     if key.vk == tcod.KEY_KP5:
         return {'rest': (True, 1)}
 
+    if key_char == 'g':
+        return {'pickup': True}
+
     if key.vk == tcod.KEY_KPADD or key_char == '+':
         return {'light_radius': 1}
     if key.vk == tcod.KEY_KPSUB or key_char == '-':
