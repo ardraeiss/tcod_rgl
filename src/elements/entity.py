@@ -77,11 +77,10 @@ class Entity:
         # Scan all the objects to see if there are objects that must be navigated around
         # Check also that the object isn't self or the target (so that the start and the end points are free)
         # The AI class handles the situation if self is next to the target so it will not use this A* function anyway
-        for entity in entities:
-            if entity.blocks_movement and entity != self and entity != target:
-                # Set the tile as a wall so it must be navigated around
-                fov.transparent[entity.y, entity.x] = True
-                fov.walkable[entity.y, entity.x] = False
+        for entity in (e for e in entities if e.blocks_movement and e != self and e != target):
+            # Set the tile as a wall so it must be navigated around
+            fov.transparent[entity.y, entity.x] = True
+            fov.walkable[entity.y, entity.x] = False
 
         # Allocate a A* path
         # The 1.41 is the normal diagonal cost of moving, it can be set as 0.0 if diagonal moves are prohibited
@@ -111,9 +110,11 @@ class Entity:
         tcod.path_delete(my_path)
 
 
-def get_blocking_entities_at_location(entities, destination_x, destination_y):
-    for entity in entities:
-        if entity.blocks_movement and entity.x == destination_x and entity.y == destination_y:
-            return entity
-
-    return None
+def get_blocking_entities_at_location(entities, x, y):
+    return next(
+        (
+            e for e in entities
+            if e.blocks_movement and e.x == x and e.y == y
+        ),
+        None
+    )
