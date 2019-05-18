@@ -23,6 +23,9 @@ class GameMap:
 
         self.rooms = []
 
+        self.number_of_bosses = 0
+        self.max_number_of_bosses = 1
+
     def initialize_tiles(self):
         """ Fill map with impassable walls """
         tiles = [[Tile(True) for _ in range(self.height)] for _ in range(self.width)]
@@ -80,7 +83,7 @@ class GameMap:
                 if new_room.intersect(other_room):
                     break
             else:
-                entities.extend(place_entities(new_room, max_monsters_per_room))
+                entities.extend(self.place_entities(new_room, max_monsters_per_room))
                 entities.extend(place_items(new_room, max_items_per_room))
                 self.rooms.append(new_room)
 
@@ -110,33 +113,30 @@ class GameMap:
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
 
+    def place_entities(self, room, max_monsters_per_room):
+        entities = []
+        # Get a random number of monsters
+        number_of_monsters = randint(0, max_monsters_per_room)
 
-def place_entities(room, max_monsters_per_room):
-    entities = []
-    # Get a random number of monsters
-    number_of_monsters = randint(0, max_monsters_per_room)
+        for i in range(number_of_monsters):
+            # Choose a random location in the room
+            x = randint(room.x1 + 1, room.x2 - 1)
+            y = randint(room.y1 + 1, room.y2 - 1)
 
-    max_number_of_ubers = 1
-    number_of_ubers = 0
+            if not any([entity for entity in entities if entity.x == x and entity.y == y]):
+                chance = randint(0, 100)
+                if chance >= 90 and self.number_of_bosses < self.max_number_of_bosses:
+                    monster = spawn_dragon(x, y)
+                    self.number_of_bosses += 1
+                    print("Boss monster spawned!")
+                elif chance < 80:
+                    monster = spawn_orc(x, y)
+                else:
+                    monster = spawn_troll(x, y)
 
-    for i in range(number_of_monsters):
-        # Choose a random location in the room
-        x = randint(room.x1 + 1, room.x2 - 1)
-        y = randint(room.y1 + 1, room.y2 - 1)
+                entities.append(monster)
 
-        if not any([entity for entity in entities if entity.x == x and entity.y == y]):
-            chance = randint(0, 100)
-            if chance >= 90 and number_of_ubers < max_number_of_ubers:
-                monster = spawn_dragon(x, y)
-                number_of_ubers += 1
-            elif chance < 80:
-                monster = spawn_orc(x, y)
-            else:
-                monster = spawn_troll(x, y)
-
-            entities.append(monster)
-
-    return entities
+        return entities
 
 
 def spawn_troll(x, y):
