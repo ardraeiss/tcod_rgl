@@ -101,7 +101,7 @@ class Game:
 
             self.render.render_all(self.entities, self.player, self.fov_map, mouse, self.game_state)
 
-            action = handle_keys(key)
+            action = handle_keys(key, self.game_state)
             a_exit = action.get('exit')
             a_fullscreen = action.get('fullscreen')
             a_show_inventory = action.get('show_inventory')
