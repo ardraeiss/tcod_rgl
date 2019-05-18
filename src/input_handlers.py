@@ -27,9 +27,9 @@ def handle_keys(key):
     if key_char == 'g':
         return {'pickup': True}
 
-    if key.vk == tcod.KEY_KPADD or key_char == '+':
+    if key.vk == tcod.KEY_KPADD or (key_char == '=' and key.shift):
         return {'light_radius': 1}
-    if key.vk == tcod.KEY_KPSUB or key_char == '-':
+    if key.vk == tcod.KEY_KPSUB or (key_char == '-' and not key.shift):
         return {'light_radius': -1}
 
     if key.vk in (tcod.KEY_ENTER, tcod.KEY_KPENTER) and key.lalt:
