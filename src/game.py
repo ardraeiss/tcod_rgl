@@ -60,6 +60,7 @@ class Game:
         self.fov_map = initialize_fov(self.game_map)
 
         self.game_state = GameStates.PLAYERS_TURN
+        self.previous_game_state = GameStates.PLAYERS_TURN
 
         # TODO extract console handler class
         self.main_console = tcod.console_init_root(
@@ -98,15 +99,23 @@ class Game:
                               self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
-            self.render.render_all(self.entities, self.player, self.fov_map, mouse)
+            self.render.render_all(self.entities, self.player, self.fov_map, mouse, self.game_state)
 
             action = handle_keys(key)
             a_exit = action.get('exit')
             a_fullscreen = action.get('fullscreen')
+            a_show_inventory = action.get('show_inventory')
             fov_recompute |= self.change_light_radius(action)
 
+            if a_show_inventory:
+                self.previous_game_state = self.game_state
+                self.game_state = GameStates.SHOW_INVENTORY
+
             if a_exit:
-                return True
+                if self.game_state == GameStates.SHOW_INVENTORY:
+                    self.game_state = self.previous_game_state
+                else:
+                    return True
 
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
@@ -119,9 +128,6 @@ class Game:
 
             if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
-
-            if self.game_state != GameStates.PLAYER_DEAD:
-                self.game_state = GameStates.PLAYERS_TURN
 
     def evaluate_messages(self):
         for player_turn_result in self.player_turn_results:
@@ -160,6 +166,9 @@ class Game:
 
                     if self.game_state == GameStates.PLAYER_DEAD:
                         return
+
+        if self.game_state != GameStates.PLAYER_DEAD:
+            self.game_state = GameStates.PLAYERS_TURN
 
     def evaluate_dead_entity(self, dead_entity):
         if not dead_entity:
