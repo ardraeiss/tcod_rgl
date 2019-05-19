@@ -5,7 +5,7 @@ import tcod
 from components.ai import BasicMonster
 from components.fighter import Fighter
 from components.item import Item
-from components.item_functions import heal
+from components.item_functions import heal, cast_lightning
 from elements.entity import Entity
 from .tile import Tile
 from .rect import Rect
@@ -171,19 +171,25 @@ def place_items(room, max_items_per_room):
     for i in range(number_of_items):
         x = randint(room.x1 + 1, room.x2 - 1)
         y = randint(room.y1 + 1, room.y2 - 1)
-        mega_potion = randint(0, 100) < 20
-        if mega_potion:
-            name = 'Mega Healing Potion'
+        chance = randint(0, 100)
+        if chance < 10:
+            name = "Mega Healing Potion"
             color = tcod.lighter_violet
-            amount = 8
+            char = '!'
+            item_component = Item(use_function=heal, amount=8)
+        elif chance < 40:
+            name = "Scroll of Lightning"
+            color = tcod.yellow
+            char = '~'
+            item_component = Item(use_function=cast_lightning, damage=20, maximum_range=5)
         else:
-            name = 'Healing Potion'
+            name = "Healing Potion"
             color = tcod.violet
-            amount = 4
+            char = '!'
+            item_component = Item(use_function=heal, amount=4)
 
         if not any([entity for entity in items if entity.x == x and entity.y == y]):
-            item = Entity(x, y, '!', color, name, render_order=RenderOrder.ITEM)
-            item_component = Item(use_function=heal, amount=amount)
+            item = Entity(x, y, char, color, name, render_order=RenderOrder.ITEM)
             item.set_item(item_component)
             items.append(item)
 

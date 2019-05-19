@@ -36,7 +36,7 @@ class Game:
     room_min_size = 6
     max_rooms = 30
     max_monsters_per_room = 2
-    max_items_per_room = 2
+    max_items_per_room = 3
 
     fov_radius = 4
 
@@ -143,7 +143,7 @@ class Game:
             item = self.player.inventory.items[a_inventory_index]
 
             if self.game_state == GameStates.SHOW_INVENTORY:
-                inventory_results = self.player.inventory.use(item)
+                inventory_results = self.player.inventory.use(item, entities=self.entities, fov_map=self.fov_map)
                 self.player_turn_results.extend(inventory_results)
             elif self.game_state == GameStates.DROP_INVENTORY:
                 inventory_results = self.player.inventory.drop_item(item)
