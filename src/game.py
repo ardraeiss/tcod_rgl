@@ -1,9 +1,10 @@
 import tcod
 
+from components.inventory import Inventory
 from elements.entity import Entity, get_blocking_entities_at_location
 from elements.world import World
 from fov_functions import initialize_fov, recompute_fov
-from game_messages import MessageLog
+from game_messages import MessageLog, Message
 from game_states import GameStates
 from input_handlers import handle_keys
 from map_objects.game_map import GameMap
@@ -35,6 +36,7 @@ class Game:
     room_min_size = 6
     max_rooms = 30
     max_monsters_per_room = 2
+    max_items_per_room = 2
 
     fov_radius = 4
 
@@ -49,13 +51,16 @@ class Game:
         self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
                              char='@', color=tcod.white, name="Player", render_order=RenderOrder.ACTOR)
         self.player.set_combat_info(Fighter(hp=30, defense=2, power=5))
+        self.player.set_inventory(Inventory(26))
 
-        self.entities = self.game_map.make_map(self.max_rooms, self.player, self.max_monsters_per_room)
+        self.entities = self.game_map.make_map(self.max_rooms, self.player,
+                                               self.max_monsters_per_room, self.max_items_per_room)
         self.entities.append(self.player)
 
         self.fov_map = initialize_fov(self.game_map)
 
         self.game_state = GameStates.PLAYERS_TURN
+        self.previous_game_state = GameStates.PLAYERS_TURN
 
         # TODO extract console handler class
         self.main_console = tcod.console_init_root(
@@ -94,44 +99,89 @@ class Game:
                               self.fov_radius, fov_light_walls, fov_algorithm)
                 fov_recompute = False
 
-            self.render.render_all(self.entities, self.player, self.fov_map, mouse)
+            self.render.render_all(self.entities, self.player, self.fov_map, mouse, self.game_state)
 
-            action = handle_keys(key)
+            action = handle_keys(key, self.game_state)
             a_exit = action.get('exit')
             a_fullscreen = action.get('fullscreen')
+            a_show_inventory = action.get('show_inventory')
+            a_drop_inventory = action.get('drop_inventory')
+            a_inventory_index = action.get('inventory_index')
             fov_recompute |= self.change_light_radius(action)
 
+            if a_show_inventory:
+                self.previous_game_state = self.game_state
+                self.game_state = GameStates.SHOW_INVENTORY
+
+            if a_drop_inventory:
+                self.previous_game_state = self.game_state
+                self.game_state = GameStates.DROP_INVENTORY
+
+            if a_inventory_index is not None:
+                self.handle_inventory(a_inventory_index)
+
             if a_exit:
-                return True
+                if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
+                    self.game_state = self.previous_game_state
+                else:
+                    return True
 
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
 
             if self.game_state == GameStates.PLAYERS_TURN:
                 fov_recompute |= self.move_player(action)
+                fov_recompute |= self.interact(action)
 
-            self.flush_turn_log()
+            self.evaluate_messages()
 
             if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
 
-    def flush_turn_log(self):
+    def handle_inventory(self, a_inventory_index):
+        if self.previous_game_state != GameStates.PLAYER_DEAD and a_inventory_index < len(self.player.inventory.items):
+            item = self.player.inventory.items[a_inventory_index]
+
+            if self.game_state == GameStates.SHOW_INVENTORY:
+                inventory_results = self.player.inventory.use(item)
+                self.player_turn_results.extend(inventory_results)
+            elif self.game_state == GameStates.DROP_INVENTORY:
+                inventory_results = self.player.inventory.drop_item(item)
+                self.player_turn_results.extend(inventory_results)
+
+    def evaluate_messages(self):
         for player_turn_result in self.player_turn_results:
             message = player_turn_result.get('message')
             dead_entity = player_turn_result.get('dead')
+            item_added = player_turn_result.get('item_added')
+            item_dropped = player_turn_result.get('item_dropped')
+            item_consumed = player_turn_result.get('consumed')
 
             if message:
                 self.message_log.add_message(message)
 
-            if dead_entity:
-                if dead_entity == self.player:
-                    message, game_state = kill_player(dead_entity)
-                else:
-                    message = kill_monster(dead_entity)
+            self.evaluate_dead_entity(dead_entity)
 
-                self.message_log.add_message(message)
+            if item_added:
+                self.pick_up_item(item_added)
+            elif item_dropped:
+                self.drop_item(item_dropped)
+            elif item_consumed:
+                self.use_item(item_consumed)
 
         self.player_turn_results = []
+
+    def pick_up_item(self, item_added):
+        self.entities.remove(item_added)
+
+        self.game_state = GameStates.ENEMY_TURN
+
+    def use_item(self, item_consumed):
+        self.game_state = GameStates.ENEMY_TURN
+
+    def drop_item(self, item_dropped):
+        self.entities.append(item_dropped)
+        self.game_state = GameStates.ENEMY_TURN
 
     def do_entities_actions(self):
         for entity in self.entities:
@@ -145,22 +195,24 @@ class Game:
                     if message:
                         self.message_log.add_message(message)
 
-                    if dead_entity:
-                        if dead_entity == self.player:
-                            message, self.game_state = kill_player(dead_entity)
-                        else:
-                            message = kill_monster(dead_entity)
-
-                        self.message_log.add_message(message)
+                    self.evaluate_dead_entity(dead_entity)
 
                     if self.game_state == GameStates.PLAYER_DEAD:
-                        break
-
-            if self.game_state == GameStates.PLAYER_DEAD:
-                break
+                        return
 
         if self.game_state != GameStates.PLAYER_DEAD:
             self.game_state = GameStates.PLAYERS_TURN
+
+    def evaluate_dead_entity(self, dead_entity):
+        if not dead_entity:
+            return
+
+        if dead_entity == self.player:
+            message, self.game_state = kill_player(dead_entity)
+        else:
+            message = kill_monster(dead_entity)
+
+        self.message_log.add_message(message)
 
     def change_light_radius(self, action) -> bool:
         a_light_radius = action.get('light_radius')
@@ -194,4 +246,23 @@ class Game:
                 fov_recompute = True
 
         self.game_state = GameStates.ENEMY_TURN
+        return fov_recompute
+
+    def interact(self, action) -> bool:
+        fov_recompute = False
+
+        pickup = action.get('pickup')
+        if not pickup:
+            return False
+
+        entity = next(
+            (e for e in self.entities if e.item and e.x == self.player.x and e.y == self.player.y),
+            None)
+        if entity:
+            pickup_results = self.player.inventory.add_item(entity)
+            self.player_turn_results.extend(pickup_results)
+            fov_recompute = True
+        else:
+            self.message_log.add_message(Message('There is nothing here to pick up.', tcod.yellow))
+
         return fov_recompute

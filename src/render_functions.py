@@ -2,6 +2,9 @@ import tcod
 
 from enum import Enum
 
+from game_states import GameStates
+from menu import inventory_menu
+
 
 class RenderOrder(Enum):
     CORPSE = 1
@@ -44,7 +47,7 @@ class Render:
     def set_message_log(self, message_log):
         self.message_log = message_log
 
-    def render_all(self, entities, player, fov_map, mouse):
+    def render_all(self, entities, player, fov_map, mouse, game_state):
         # Draw map tiles
         self.draw_tiles(fov_map)
 
@@ -72,6 +75,9 @@ class Render:
             y += 1
 
         self.render_bar(1, 1, 'HP', player.fighter.hp, player.fighter.max_hp)
+
+        if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
+            self.render_menu(game_state, player)
 
         tcod.console_set_default_foreground(self.panel_buffer, tcod.light_gray)
         tcod.console_print_ex(self.panel_buffer, 1, 0, tcod.BKGND_NONE, tcod.LEFT,
@@ -113,6 +119,15 @@ class Render:
                     self.game_map.tiles[x][y].explored = True
 
                 self.map_buffer.bg[y, x] = color
+
+    def render_menu(self, game_state, player):
+        if game_state == GameStates.SHOW_INVENTORY:
+            text = "Press the key next to an item to use it, or Esc to cancel.\n"
+        else:
+            text = "Press the key net to an item to drop it, or Esc to cancel.\n"
+
+        inventory_menu(self.main_console, text,
+                       player.inventory, 50, self.screen_width, self.screen_height)
 
     def get_tile_colors(self, tile, visible: bool) -> tcod.Color:
         if visible:

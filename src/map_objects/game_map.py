@@ -4,6 +4,8 @@ import tcod
 
 from components.ai import BasicMonster
 from components.fighter import Fighter
+from components.item import Item
+from components.item_functions import heal
 from elements.entity import Entity
 from .tile import Tile
 from .rect import Rect
@@ -21,6 +23,9 @@ class GameMap:
         self.tiles = self.initialize_tiles()
 
         self.rooms = []
+
+        self.number_of_bosses = 0
+        self.max_number_of_bosses = 0
 
     def initialize_tiles(self):
         """ Fill map with impassable walls """
@@ -48,8 +53,9 @@ class GameMap:
 
     ##
     # Map creation
-    def make_map(self, max_rooms, player, max_monsters_per_room):
-        entities = self.generate_rooms(self.width, self.height, max_rooms, max_monsters_per_room)
+    def make_map(self, max_rooms, player, max_monsters_per_room, max_items_per_room):
+        entities = self.generate_rooms(self.width, self.height, max_rooms,
+                                       max_monsters_per_room, max_items_per_room)
 
         # the first room is where the player starts at
         player.x, player.y = self.rooms[0].center()
@@ -59,7 +65,7 @@ class GameMap:
 
         return entities
 
-    def generate_rooms(self, map_width, map_height, max_rooms, max_monsters_per_room):
+    def generate_rooms(self, map_width, map_height, max_rooms, max_monsters_per_room, max_items_per_room):
         self.rooms = []
         entities = []
         num_rooms = 0
@@ -78,7 +84,8 @@ class GameMap:
                 if new_room.intersect(other_room):
                     break
             else:
-                entities.extend(place_entities(new_room, max_monsters_per_room))
+                entities.extend(self.place_entities(new_room, max_monsters_per_room))
+                entities.extend(place_items(new_room, max_items_per_room))
                 self.rooms.append(new_room)
 
                 # center coordinates of new room, will be useful later
@@ -107,26 +114,29 @@ class GameMap:
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
 
+    def place_entities(self, room, max_monsters_per_room):
+        entities = []
+        # Get a random number of monsters
+        number_of_monsters = randint(0, max_monsters_per_room)
 
-def place_entities(room, max_monsters_per_room):
-    entities = []
-    # Get a random number of monsters
-    number_of_monsters = randint(0, max_monsters_per_room)
+        for i in range(number_of_monsters):
+            # Choose a random location in the room
+            x = randint(room.x1 + 1, room.x2 - 1)
+            y = randint(room.y1 + 1, room.y2 - 1)
 
-    for i in range(number_of_monsters):
-        # Choose a random location in the room
-        x = randint(room.x1 + 1, room.x2 - 1)
-        y = randint(room.y1 + 1, room.y2 - 1)
+            if not any([entity for entity in entities if entity.x == x and entity.y == y]):
+                chance = randint(0, 100)
+                if chance >= 90 and self.number_of_bosses < self.max_number_of_bosses:
+                    monster = spawn_dragon(x, y)
+                    self.number_of_bosses += 1
+                elif chance < 80:
+                    monster = spawn_orc(x, y)
+                else:
+                    monster = spawn_troll(x, y)
 
-        if not any([entity for entity in entities if entity.x == x and entity.y == y]):
-            if randint(0, 100) < 80:
-                monster = spawn_orc(x, y)
-            else:
-                monster = spawn_troll(x, y)
+                entities.append(monster)
 
-            entities.append(monster)
-
-    return entities
+        return entities
 
 
 def spawn_troll(x, y):
@@ -143,3 +153,38 @@ def spawn_orc(x, y):
     monster.set_ai(BasicMonster())
     monster.set_combat_info(Fighter(hp=10, defense=0, power=3))
     return monster
+
+
+def spawn_dragon(x, y):
+    monster = Entity(x, y, 'D', tcod.light_flame, "Red Dragon",
+                     render_order=RenderOrder.ACTOR)
+    monster.set_ai(BasicMonster())
+    monster.set_combat_info(Fighter(hp=20, defense=3, power=5))
+    return monster
+
+
+def place_items(room, max_items_per_room):
+    items = []
+
+    number_of_items = randint(0, max_items_per_room)
+
+    for i in range(number_of_items):
+        x = randint(room.x1 + 1, room.x2 - 1)
+        y = randint(room.y1 + 1, room.y2 - 1)
+        mega_potion = randint(0, 100) < 20
+        if mega_potion:
+            name = 'Mega Healing Potion'
+            color = tcod.lighter_violet
+            amount = 8
+        else:
+            name = 'Healing Potion'
+            color = tcod.violet
+            amount = 4
+
+        if not any([entity for entity in items if entity.x == x and entity.y == y]):
+            item = Entity(x, y, '!', color, name, render_order=RenderOrder.ITEM)
+            item_component = Item(use_function=heal, amount=amount)
+            item.set_item(item_component)
+            items.append(item)
+
+    return items
