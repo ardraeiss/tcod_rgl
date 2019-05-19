@@ -25,7 +25,7 @@ class GameMap:
         self.rooms = []
 
         self.number_of_bosses = 0
-        self.max_number_of_bosses = 1
+        self.max_number_of_bosses = 0
 
     def initialize_tiles(self):
         """ Fill map with impassable walls """
