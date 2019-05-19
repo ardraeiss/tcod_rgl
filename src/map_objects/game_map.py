@@ -5,6 +5,7 @@ import tcod
 from components.ai import BasicMonster
 from components.fighter import Fighter
 from components.item import Item
+from components.item_functions import heal
 from elements.entity import Entity
 from .tile import Tile
 from .rect import Rect
@@ -128,7 +129,6 @@ class GameMap:
                 if chance >= 90 and self.number_of_bosses < self.max_number_of_bosses:
                     monster = spawn_dragon(x, y)
                     self.number_of_bosses += 1
-                    print("Boss monster spawned!")
                 elif chance < 80:
                     monster = spawn_orc(x, y)
                 else:
@@ -156,7 +156,7 @@ def spawn_orc(x, y):
 
 
 def spawn_dragon(x, y):
-    monster = Entity(x, y, 'D', tcod.flame, "Dragon",
+    monster = Entity(x, y, 'D', tcod.light_flame, "Red Dragon",
                      render_order=RenderOrder.ACTOR)
     monster.set_ai(BasicMonster())
     monster.set_combat_info(Fighter(hp=20, defense=3, power=5))
@@ -171,10 +171,20 @@ def place_items(room, max_items_per_room):
     for i in range(number_of_items):
         x = randint(room.x1 + 1, room.x2 - 1)
         y = randint(room.y1 + 1, room.y2 - 1)
+        mega_potion = randint(0, 100) < 20
+        if mega_potion:
+            name = 'Mega Healing Potion'
+            color = tcod.lighter_violet
+            amount = 8
+        else:
+            name = 'Healing Potion'
+            color = tcod.violet
+            amount = 4
 
         if not any([entity for entity in items if entity.x == x and entity.y == y]):
-            item = Entity(x, y, '!', tcod.violet, 'Healing Potion', render_order=RenderOrder.ITEM)
-            item.set_item(Item())
+            item = Entity(x, y, '!', color, name, render_order=RenderOrder.ITEM)
+            item_component = Item(use_function=heal, amount=amount)
+            item.set_item(item_component)
             items.append(item)
 
     return items
