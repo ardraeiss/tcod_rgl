@@ -105,11 +105,15 @@ class Game:
             a_exit = action.get('exit')
             a_fullscreen = action.get('fullscreen')
             a_show_inventory = action.get('show_inventory')
+            a_inventory_index = action.get('inventory_index')
             fov_recompute |= self.change_light_radius(action)
 
             if a_show_inventory:
                 self.previous_game_state = self.game_state
                 self.game_state = GameStates.SHOW_INVENTORY
+
+            if a_inventory_index is not None:
+                self.handle_inventory(a_inventory_index)
 
             if a_exit:
                 if self.game_state == GameStates.SHOW_INVENTORY:
@@ -129,11 +133,18 @@ class Game:
             if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
 
+    def handle_inventory(self, a_inventory_index):
+        if self.previous_game_state != GameStates.PLAYER_DEAD and a_inventory_index < len(self.player.inventory.items):
+            item = self.player.inventory.items[a_inventory_index]
+            item_use_results = self.player.inventory.use(item)
+            self.player_turn_results.extend(item_use_results)
+
     def evaluate_messages(self):
         for player_turn_result in self.player_turn_results:
             message = player_turn_result.get('message')
             dead_entity = player_turn_result.get('dead')
             item_added = player_turn_result.get('item_added')
+            item_consumed = player_turn_result.get('consumed')
 
             if message:
                 self.message_log.add_message(message)
@@ -142,12 +153,17 @@ class Game:
 
             if item_added:
                 self.pick_up_item(item_added)
+            elif item_consumed:
+                self.use_item(item_consumed)
 
         self.player_turn_results = []
 
     def pick_up_item(self, item_added):
         self.entities.remove(item_added)
 
+        self.game_state = GameStates.ENEMY_TURN
+
+    def use_item(self, item_consumed):
         self.game_state = GameStates.ENEMY_TURN
 
     def do_entities_actions(self):
