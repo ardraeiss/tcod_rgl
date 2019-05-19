@@ -5,8 +5,9 @@ import tcod
 from components.ai import BasicMonster
 from components.fighter import Fighter
 from components.item import Item
-from components.item_functions import heal, cast_lightning
+from components.item_functions import heal, cast_lightning, cast_fireball
 from elements.entity import Entity
+from game_messages import Message
 from .tile import Tile
 from .rect import Rect
 from render_functions import RenderOrder
@@ -177,11 +178,22 @@ def place_items(room, max_items_per_room):
             color = tcod.lighter_violet
             char = '!'
             item_component = Item(use_function=heal, amount=8)
-        elif chance < 40:
+        elif chance < 30:
             name = "Scroll of Lightning"
             color = tcod.yellow
             char = '~'
             item_component = Item(use_function=cast_lightning, damage=20, maximum_range=5)
+        elif chance < 60:
+            name = "Scroll of Fireball"
+            color = tcod.flame
+            char = '~'
+            item_component = Item(
+                use_function=cast_fireball,
+                targeting=True,
+                targeting_message=Message(
+                    "Left-click a target tile for the fireball, or right-click to cancel.",
+                    tcod.light_cyan),
+                damage=12, radius=3)
         else:
             name = "Healing Potion"
             color = tcod.violet

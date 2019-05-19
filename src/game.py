@@ -6,7 +6,7 @@ from elements.world import World
 from fov_functions import initialize_fov, recompute_fov
 from game_messages import MessageLog, Message
 from game_states import GameStates
-from input_handlers import handle_keys
+from input_handlers import handle_keys, handle_mouse
 from map_objects.game_map import GameMap
 from render_functions import Render, RenderOrder
 from components.fighter import Fighter
@@ -39,6 +39,8 @@ class Game:
     max_items_per_room = 3
 
     fov_radius = 4
+    fov_light_walls = True
+    fov_algorithm = tcod.FOV_SHADOW
 
     def __init__(self) -> None:
         tcod.console_set_custom_font('./resources/fonts/arial12x12.png',
@@ -62,6 +64,8 @@ class Game:
         self.game_state = GameStates.PLAYERS_TURN
         self.previous_game_state = GameStates.PLAYERS_TURN
 
+        self.targeting_item = None
+
         # TODO extract console handler class
         self.main_console = tcod.console_init_root(
                 self.screen_width,
@@ -83,9 +87,6 @@ class Game:
     def run(self) -> bool:
         print("Running")
 
-        fov_light_walls = True
-        fov_algorithm = tcod.FOV_SHADOW
-
         fov_recompute = True
 
         key = tcod.Key()
@@ -94,49 +95,79 @@ class Game:
         while not tcod.console_is_window_closed():
             tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS | tcod.EVENT_MOUSE, key, mouse)
 
-            if fov_recompute:
-                recompute_fov(self.fov_map, self.player.x, self.player.y,
-                              self.fov_radius, fov_light_walls, fov_algorithm)
-                fov_recompute = False
+            fov_recompute = self.recompute_fov(fov_recompute)
 
             self.render.render_all(self.entities, self.player, self.fov_map, mouse, self.game_state)
 
             action = handle_keys(key, self.game_state)
-            a_exit = action.get('exit')
-            a_fullscreen = action.get('fullscreen')
-            a_show_inventory = action.get('show_inventory')
-            a_drop_inventory = action.get('drop_inventory')
-            a_inventory_index = action.get('inventory_index')
+            mouse_action = handle_mouse(mouse)
+
+            left_click = mouse_action.get('left_click')
+            right_click = mouse_action.get('right_click')
+
             fov_recompute |= self.change_light_radius(action)
 
-            if a_show_inventory:
-                self.previous_game_state = self.game_state
-                self.game_state = GameStates.SHOW_INVENTORY
+            self.do_inventory(action)
 
-            if a_drop_inventory:
-                self.previous_game_state = self.game_state
-                self.game_state = GameStates.DROP_INVENTORY
+            self.do_targeting(left_click, right_click)
 
-            if a_inventory_index is not None:
-                self.handle_inventory(a_inventory_index)
-
+            a_exit = action.get('exit')
             if a_exit:
                 if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
                     self.game_state = self.previous_game_state
+                elif self.game_state == GameStates.TARGETING:
+                    self.player_turn_results.append({'targeting_cancelled': True})
                 else:
                     return True
 
+            a_fullscreen = action.get('fullscreen')
             if a_fullscreen:
                 tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
 
-            if self.game_state == GameStates.PLAYERS_TURN:
-                fov_recompute |= self.move_player(action)
-                fov_recompute |= self.interact(action)
+            fov_recompute = self.do_player_turn(action, fov_recompute)
 
             self.evaluate_messages()
 
             if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
+
+    def recompute_fov(self, fov_recompute):
+        if fov_recompute:
+            recompute_fov(self.fov_map, self.player.x, self.player.y,
+                          self.fov_radius, self.fov_light_walls, self.fov_algorithm)
+            fov_recompute = False
+        return fov_recompute
+
+    def do_player_turn(self, action, fov_recompute):
+        if self.game_state == GameStates.PLAYERS_TURN:
+            fov_recompute |= self.move_player(action)
+            fov_recompute |= self.interact(action)
+        return fov_recompute
+
+    def do_inventory(self, action):
+        a_show_inventory = action.get('show_inventory')
+        if a_show_inventory:
+            self.previous_game_state = self.game_state
+            self.game_state = GameStates.SHOW_INVENTORY
+        a_drop_inventory = action.get('drop_inventory')
+        if a_drop_inventory:
+            self.previous_game_state = self.game_state
+            self.game_state = GameStates.DROP_INVENTORY
+        a_inventory_index = action.get('inventory_index')
+        if a_inventory_index is not None:
+            self.handle_inventory(a_inventory_index)
+
+    def do_targeting(self, left_click, right_click):
+        if self.game_state == GameStates.TARGETING:
+            if left_click:
+                target_x, target_y = left_click
+
+                item_use_results = self.player.inventory.use(
+                    self.targeting_item, entities=self.entities, fov_map=self.fov_map,
+                    target_x=target_x, target_y=target_y)
+                self.player_turn_results.extend(item_use_results)
+            elif right_click:
+                self.player_turn_results.append({'targeting_cancelled': True})
 
     def handle_inventory(self, a_inventory_index):
         if self.previous_game_state != GameStates.PLAYER_DEAD and a_inventory_index < len(self.player.inventory.items):
@@ -156,6 +187,8 @@ class Game:
             item_added = player_turn_result.get('item_added')
             item_dropped = player_turn_result.get('item_dropped')
             item_consumed = player_turn_result.get('consumed')
+            targeting = player_turn_result.get('targeting')
+            targeting_cancelled = player_turn_result.get('targeting_cancelled')
 
             if message:
                 self.message_log.add_message(message)
@@ -168,7 +201,17 @@ class Game:
                 self.drop_item(item_dropped)
             elif item_consumed:
                 self.use_item(item_consumed)
+            elif targeting:
+                self.previous_game_state = GameStates.PLAYERS_TURN
+                self.game_state = GameStates.TARGETING
 
+                self.targeting_item = targeting
+
+                self.message_log.add_message(self.targeting_item.item.targeting_message)
+            elif targeting_cancelled:
+                self.game_state = self.previous_game_state
+
+                self.message_log.add_message(Message('Targeting cancelled'))
         self.player_turn_results = []
 
     def pick_up_item(self, item_added):
