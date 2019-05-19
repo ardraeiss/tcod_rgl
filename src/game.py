@@ -105,6 +105,7 @@ class Game:
             a_exit = action.get('exit')
             a_fullscreen = action.get('fullscreen')
             a_show_inventory = action.get('show_inventory')
+            a_drop_inventory = action.get('drop_inventory')
             a_inventory_index = action.get('inventory_index')
             fov_recompute |= self.change_light_radius(action)
 
@@ -112,11 +113,15 @@ class Game:
                 self.previous_game_state = self.game_state
                 self.game_state = GameStates.SHOW_INVENTORY
 
+            if a_drop_inventory:
+                self.previous_game_state = self.game_state
+                self.game_state = GameStates.DROP_INVENTORY
+
             if a_inventory_index is not None:
                 self.handle_inventory(a_inventory_index)
 
             if a_exit:
-                if self.game_state == GameStates.SHOW_INVENTORY:
+                if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
                     self.game_state = self.previous_game_state
                 else:
                     return True
@@ -136,14 +141,20 @@ class Game:
     def handle_inventory(self, a_inventory_index):
         if self.previous_game_state != GameStates.PLAYER_DEAD and a_inventory_index < len(self.player.inventory.items):
             item = self.player.inventory.items[a_inventory_index]
-            item_use_results = self.player.inventory.use(item)
-            self.player_turn_results.extend(item_use_results)
+
+            if self.game_state == GameStates.SHOW_INVENTORY:
+                inventory_results = self.player.inventory.use(item)
+                self.player_turn_results.extend(inventory_results)
+            elif self.game_state == GameStates.DROP_INVENTORY:
+                inventory_results = self.player.inventory.drop_item(item)
+                self.player_turn_results.extend(inventory_results)
 
     def evaluate_messages(self):
         for player_turn_result in self.player_turn_results:
             message = player_turn_result.get('message')
             dead_entity = player_turn_result.get('dead')
             item_added = player_turn_result.get('item_added')
+            item_dropped = player_turn_result.get('item_dropped')
             item_consumed = player_turn_result.get('consumed')
 
             if message:
@@ -153,6 +164,8 @@ class Game:
 
             if item_added:
                 self.pick_up_item(item_added)
+            elif item_dropped:
+                self.drop_item(item_dropped)
             elif item_consumed:
                 self.use_item(item_consumed)
 
@@ -164,6 +177,10 @@ class Game:
         self.game_state = GameStates.ENEMY_TURN
 
     def use_item(self, item_consumed):
+        self.game_state = GameStates.ENEMY_TURN
+
+    def drop_item(self, item_dropped):
+        self.entities.append(item_dropped)
         self.game_state = GameStates.ENEMY_TURN
 
     def do_entities_actions(self):

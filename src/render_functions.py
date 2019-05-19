@@ -76,8 +76,8 @@ class Render:
 
         self.render_bar(1, 1, 'HP', player.fighter.hp, player.fighter.max_hp)
 
-        if game_state == GameStates.SHOW_INVENTORY:
-            self.render_menu(player,)
+        if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
+            self.render_menu(game_state, player)
 
         tcod.console_set_default_foreground(self.panel_buffer, tcod.light_gray)
         tcod.console_print_ex(self.panel_buffer, 1, 0, tcod.BKGND_NONE, tcod.LEFT,
@@ -120,8 +120,13 @@ class Render:
 
                 self.map_buffer.bg[y, x] = color
 
-    def render_menu(self, player):
-        inventory_menu(self.main_console, 'Press the key next to an item to use it, or Esc to cancel.\n',
+    def render_menu(self, game_state, player):
+        if game_state == GameStates.SHOW_INVENTORY:
+            text = "Press the key next to an item to use it, or Esc to cancel.\n"
+        else:
+            text = "Press the key net to an item to drop it, or Esc to cancel.\n"
+
+        inventory_menu(self.main_console, text,
                        player.inventory, 50, self.screen_width, self.screen_height)
 
     def get_tile_colors(self, tile, visible: bool) -> tcod.Color:

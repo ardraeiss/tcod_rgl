@@ -10,7 +10,7 @@ def handle_keys(key, game_state):
     if game_state == GameStates.PLAYER_DEAD:
         return handle_player_dead_keys(key)
 
-    if game_state == GameStates.SHOW_INVENTORY:
+    if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
         return handle_inventory_keys(key)
 
     return {}
@@ -29,6 +29,8 @@ def handle_player_turn_keys(key):
 
     if key_char == 'i':
         return {'show_inventory': True}
+    if key_char == 'd':
+        return {'drop_inventory': True}
 
     if key.vk == tcod.KEY_KPADD or (key_char == '=' and key.shift):
         return {'light_radius': 1}
