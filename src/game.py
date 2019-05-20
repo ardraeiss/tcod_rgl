@@ -7,6 +7,7 @@ from fov_functions import initialize_fov, recompute_fov
 from game_messages import MessageLog, Message
 from game_states import GameStates
 from input_handlers import handle_keys, handle_mouse
+from loader_functions.initialize_new_game import get_constants
 from map_objects.game_map import GameMap
 from render_functions import Render, RenderOrder
 from components.fighter import Fighter
@@ -15,48 +16,28 @@ from death_functions import kill_monster, kill_player
 
 class Game:
     """Game session object"""
-    title = 'tcod tutorial revised'
     fullscreen = False
 
-    screen_width = 80
-    screen_height = 50
-
-    bar_width = 20
-    panel_height = 7
-    panel_y = screen_height - panel_height
-
-    message_x = bar_width + 2
-    message_width = screen_width - bar_width - 2
-    message_height = panel_height - 1
-
-    map_width = 80
-    map_height = 43
-
-    room_max_size = 10
-    room_min_size = 6
-    max_rooms = 30
-    max_monsters_per_room = 2
-    max_items_per_room = 3
-
-    fov_radius = 4
-    fov_light_walls = True
-    fov_algorithm = tcod.FOV_SHADOW
-
     def __init__(self) -> None:
-        tcod.console_set_custom_font('./resources/fonts/arial12x12.png',
-                                     tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
+        self.constants = get_constants()
+
+        self.fov_radius = self.constants['fov_radius']
+
+        tcod.console_set_custom_font(self.constants['font_file'], self.constants['font_style'])
 
         self.world = World()
 
-        self.game_map = GameMap(self.map_width, self.map_height, self.room_min_size, self.room_max_size)
+        self.game_map = GameMap(self.constants['map_width'], self.constants['map_height'],
+                                self.constants['room_min_size'], self.constants['room_max_size'])
 
-        self.player = Entity(x=int(self.screen_width / 2), y=int(self.screen_height / 2),
+        self.player = Entity(x=int(self.constants['screen_width'] / 2), y=int(self.constants['screen_height'] / 2),
                              char='@', color=tcod.white, name="Player", render_order=RenderOrder.ACTOR)
         self.player.set_combat_info(Fighter(hp=30, defense=2, power=5))
         self.player.set_inventory(Inventory(26))
 
-        self.entities = self.game_map.make_map(self.max_rooms, self.player,
-                                               self.max_monsters_per_room, self.max_items_per_room)
+        self.entities = self.game_map.make_map(self.constants['max_rooms'], self.player,
+                                               self.constants['max_monsters_per_room'],
+                                               self.constants['max_items_per_room'])
         self.entities.append(self.player)
 
         self.fov_map = initialize_fov(self.game_map)
@@ -68,18 +49,20 @@ class Game:
 
         # TODO extract console handler class
         self.main_console = tcod.console_init_root(
-                self.screen_width,
-                self.screen_height,
-                self.title,
+                self.constants['screen_width'],
+                self.constants['screen_height'],
+                self.constants['window_title'],
                 self.fullscreen,
                 order="F")
-        self.map_buffer = tcod.console.Console(self.screen_width, self.screen_height)
-        self.panel_buffer = tcod.console.Console(self.screen_width, self.panel_height)
-        self.render = Render(self.main_console, self.screen_width, self.screen_height)
+        self.map_buffer = tcod.console.Console(self.constants['screen_width'], self.constants['screen_height'])
+        self.panel_buffer = tcod.console.Console(self.constants['screen_width'], self.constants['screen_height'])
+        self.render = Render(self.main_console, self.constants['screen_width'], self.constants['screen_height'])
         self.render.set_map(self.game_map, self.map_buffer)
-        self.render.set_panel(self.panel_buffer, self.panel_height, self.bar_width, self.panel_y)
+        self.render.set_panel(self.panel_buffer, self.constants['panel_height'],
+                              self.constants['bar_width'], self.constants['panel_y'])
 
-        self.message_log = MessageLog(self.message_x, self.message_width, self.message_height)
+        self.message_log = MessageLog(self.constants['message_x'], self.constants['message_width'],
+                                      self.constants['message_height'])
         self.render.set_message_log(self.message_log)
 
         self.player_turn_results = []
@@ -134,7 +117,7 @@ class Game:
     def recompute_fov(self, fov_recompute):
         if fov_recompute:
             recompute_fov(self.fov_map, self.player.x, self.player.y,
-                          self.fov_radius, self.fov_light_walls, self.fov_algorithm)
+                          self.fov_radius, self.constants['fov_light_walls'], self.constants['fov_algorithm'])
             fov_recompute = False
         return fov_recompute
 
