@@ -5,7 +5,7 @@ import tcod
 from components.ai import BasicMonster
 from components.fighter import Fighter
 from components.item import Item
-from components.item_functions import heal, cast_lightning, cast_fireball
+from components.item_functions import heal, cast_lightning, cast_fireball, cast_confuse
 from elements.entity import Entity
 from game_messages import Message
 from .tile import Tile
@@ -173,11 +173,17 @@ def place_items(room, max_items_per_room):
         x = randint(room.x1 + 1, room.x2 - 1)
         y = randint(room.y1 + 1, room.y2 - 1)
         chance = randint(0, 100)
-        if chance < 10:
+        if chance < 5:
             name = "Mega Healing Potion"
             color = tcod.lighter_violet
             char = '!'
             item_component = Item(use_function=heal, amount=8)
+        if chance < 20:
+            name = "Scroll of Confusion"
+            color = tcod.light_pink
+            char = '~'
+            item_component = Item(use_function=cast_confuse, targeting=True, targeting_message=Message(
+                        'Left-click an enemy to confuse it, or right-click to cancel.', tcod.light_cyan))
         elif chance < 30:
             name = "Scroll of Lightning"
             color = tcod.yellow
