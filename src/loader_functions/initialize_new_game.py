@@ -1,5 +1,13 @@
 import tcod as tcod
 
+from components.fighter import Fighter
+from components.inventory import Inventory
+from elements.entity import Entity
+from game_map import GameMap
+from game_messages import MessageLog
+from game_states import GameStates
+from render_functions import RenderOrder
+
 
 def get_constants():
     window_title = 'Roguelike Tutorial Revised'
@@ -22,7 +30,7 @@ def get_constants():
     map_height = 43
 
     room_max_size = 10
-    room_min_size = 6
+    room_min_size = 5
     max_rooms = 30
 
     fov_algorithm = tcod.FOV_SHADOW
@@ -61,8 +69,29 @@ def get_constants():
         'fov_light_walls': fov_light_walls,
         'fov_radius': fov_radius,
         'max_monsters_per_room': max_monsters_per_room,
+        'max_bosses_per_map': max_bosses_per_map,
         'max_items_per_room': max_items_per_room,
         'colors': colors
     }
 
     return constants
+
+
+def get_game_variables(constants):
+    fighter_component = Fighter(hp=30, defense=2, power=5)
+    inventory_component = Inventory(26)
+    player = Entity(0, 0, '@', tcod.white, 'Player', blocks_movement=True, render_order=RenderOrder.ACTOR)
+    player.set_combat_info(fighter_component)
+    player.set_inventory(inventory_component)
+    entities = [player]
+
+    game_map = GameMap(constants['map_width'], constants['map_height'],
+                       constants['room_min_size'], constants['room_max_size'])
+    entities.extend(game_map.make_map(constants['max_rooms'], player,
+                    constants['max_monsters_per_room'], constants['max_items_per_room']))
+
+    message_log = MessageLog(constants['message_x'], constants['message_width'], constants['message_height'])
+
+    game_state = GameStates.PLAYERS_TURN
+
+    return player, entities, game_map, message_log, game_state

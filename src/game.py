@@ -1,16 +1,12 @@
 import tcod
 
-from components.inventory import Inventory
-from elements.entity import Entity, get_blocking_entities_at_location
-from elements.world import World
+from elements.entity import get_blocking_entities_at_location
 from fov_functions import initialize_fov, recompute_fov
-from game_messages import MessageLog, Message
+from game_messages import Message
 from game_states import GameStates
 from input_handlers import handle_keys, handle_mouse
-from loader_functions.initialize_new_game import get_constants
-from map_objects.game_map import GameMap
-from render_functions import Render, RenderOrder
-from components.fighter import Fighter
+from loader_functions.initialize_new_game import get_constants, get_game_variables
+from render_functions import Render
 from death_functions import kill_monster, kill_player
 
 
@@ -25,26 +21,6 @@ class Game:
 
         tcod.console_set_custom_font(self.constants['font_file'], self.constants['font_style'])
 
-        self.world = World()
-
-        self.game_map = GameMap(self.constants['map_width'], self.constants['map_height'],
-                                self.constants['room_min_size'], self.constants['room_max_size'])
-
-        self.player = Entity(x=int(self.constants['screen_width'] / 2), y=int(self.constants['screen_height'] / 2),
-                             char='@', color=tcod.white, name="Player", render_order=RenderOrder.ACTOR)
-        self.player.set_combat_info(Fighter(hp=30, defense=2, power=5))
-        self.player.set_inventory(Inventory(26))
-
-        self.entities = self.game_map.make_map(self.constants['max_rooms'], self.player,
-                                               self.constants['max_monsters_per_room'],
-                                               self.constants['max_items_per_room'])
-        self.entities.append(self.player)
-
-        self.fov_map = initialize_fov(self.game_map)
-
-        self.game_state = GameStates.PLAYERS_TURN
-        self.previous_game_state = GameStates.PLAYERS_TURN
-
         self.targeting_item = None
 
         # TODO extract console handler class
@@ -56,13 +32,20 @@ class Game:
                 order="F")
         self.map_buffer = tcod.console.Console(self.constants['screen_width'], self.constants['screen_height'])
         self.panel_buffer = tcod.console.Console(self.constants['screen_width'], self.constants['screen_height'])
-        self.render = Render(self.main_console, self.constants['screen_width'], self.constants['screen_height'])
+
+        self.player, self.entities, self.game_map, self.message_log, self.game_state = \
+            get_game_variables(self.constants)
+
+        self.fov_map = initialize_fov(self.game_map)
+
+        self.previous_game_state = GameStates.PLAYERS_TURN
+
+        self.render = Render(self.main_console, self.constants['screen_width'], self.constants['screen_height'],
+                             self.constants['colors'])
         self.render.set_map(self.game_map, self.map_buffer)
         self.render.set_panel(self.panel_buffer, self.constants['panel_height'],
                               self.constants['bar_width'], self.constants['panel_y'])
 
-        self.message_log = MessageLog(self.constants['message_x'], self.constants['message_width'],
-                                      self.constants['message_height'])
         self.render.set_message_log(self.message_log)
 
         self.player_turn_results = []

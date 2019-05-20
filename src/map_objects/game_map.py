@@ -8,8 +8,8 @@ from components.item import Item
 from components.item_functions import heal, cast_lightning, cast_fireball, cast_confuse
 from elements.entity import Entity
 from game_messages import Message
-from .tile import Tile
-from .rect import Rect
+from src.map_objects.tile import Tile
+from src.map_objects.rect import Rect
 from render_functions import RenderOrder
 
 
