@@ -12,7 +12,7 @@ class RenderOrder(Enum):
     ACTOR = 3
 
 
-colors = {
+_colors = {
     'dark_wall': tcod.Color(0, 0, 100),
     'dark_ground': tcod.Color(50, 50, 150),
     'light_wall': tcod.Color(130, 110, 50),
@@ -21,7 +21,7 @@ colors = {
 
 
 class Render:
-    def __init__(self, main_console, screen_width, screen_height):
+    def __init__(self, main_console, screen_width, screen_height, colors):
         self.main_console = main_console
         self.map_buffer = None
         self.panel_buffer = None
@@ -33,6 +33,8 @@ class Render:
         self.panel_y = self.screen_height - 1
         self.bar_color = tcod.light_red
         self.back_color = tcod.darker_red
+
+        self.colors = colors
 
     def set_map(self, game_map, map_buffer):
         self.game_map = game_map
@@ -132,12 +134,12 @@ class Render:
     def get_tile_colors(self, tile, visible: bool) -> tcod.Color:
         if visible:
             if tile.block_sight:
-                return colors['light_wall']
-            return colors['light_ground']
+                return self.colors['light_wall']
+            return self.colors['light_ground']
         elif tile.explored:
             if tile.block_sight:
-                return colors['dark_wall']
-            return colors['dark_ground']
+                return self.colors['dark_wall']
+            return self.colors['dark_ground']
         return tcod.Color(0, 0, 0)
 
     def clean_all(self, entities):
