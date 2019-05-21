@@ -4,8 +4,10 @@ from elements.entity import get_blocking_entities_at_location
 from fov_functions import initialize_fov, recompute_fov
 from game_messages import Message
 from game_states import GameStates
-from input_handlers import handle_keys, handle_mouse
+from input_handlers import handle_keys, handle_mouse, handle_main_menu
+from loader_functions.data_loaders import load_game, save_game
 from loader_functions.initialize_new_game import get_constants, get_game_variables
+from menu import main_menu, message_box
 from render_functions import Render
 from death_functions import kill_monster, kill_player
 
@@ -33,25 +35,100 @@ class Game:
         self.map_buffer = tcod.console.Console(self.constants['screen_width'], self.constants['screen_height'])
         self.panel_buffer = tcod.console.Console(self.constants['screen_width'], self.constants['screen_height'])
 
-        self.player, self.entities, self.game_map, self.message_log, self.game_state = \
-            get_game_variables(self.constants)
-
-        self.fov_map = initialize_fov(self.game_map)
+        self.player = None
+        self.entities = None
+        self.game_map = None
+        self.message_log = None
+        self.game_state = None
+        self.fov_map = None
 
         self.previous_game_state = GameStates.PLAYERS_TURN
 
+        self.render = None
         self.render = Render(self.main_console, self.constants['screen_width'], self.constants['screen_height'],
                              self.constants['colors'])
+#        self.render.set_map(self.game_map, self.map_buffer)
+#        self.render.set_panel(self.panel_buffer, self.constants['panel_height'],
+#                              self.constants['bar_width'], self.constants['panel_y'])
+
+#        self.render.set_message_log(self.message_log)
+
+        self.reset_game()
+
+        self.player_turn_results = []
+
+    def reset_game(self):
+        self.player, self.entities, self.game_map, self.message_log, self.game_state = \
+            get_game_variables(self.constants)
+
+#        self.render = Render(self.main_console, self.constants['screen_width'], self.constants['screen_height'],
+#                             self.constants['colors'])
         self.render.set_map(self.game_map, self.map_buffer)
         self.render.set_panel(self.panel_buffer, self.constants['panel_height'],
                               self.constants['bar_width'], self.constants['panel_y'])
 
         self.render.set_message_log(self.message_log)
 
-        self.player_turn_results = []
+        self.targeting_item = None
 
-    def run(self) -> bool:
+    def run(self):
+        show_main_menu = True
+        show_load_error_message = False
+
+        main_menu_background_image = tcod.image_load('menu_background.png')
+
+        key = tcod.Key()
+        mouse = tcod.Mouse()
+
+        while not tcod.console_is_window_closed():
+            tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS | tcod.EVENT_MOUSE, key, mouse)
+
+            if show_main_menu:
+                main_menu(self.main_console, main_menu_background_image, self.constants['screen_width'],
+                          self.constants['screen_height'])
+
+                if show_load_error_message:
+                    message_box(self.main_console, 'No save game to load', 50,
+                                self.constants['screen_width'], self.constants['screen_height'])
+
+                tcod.console_flush()
+
+                action = handle_main_menu(key)
+
+                new_game = action.get('new_game')
+                load_saved_game = action.get('load_game')
+                exit_game = action.get('exit')
+
+                if show_load_error_message and (new_game or load_saved_game or exit_game):
+                    show_load_error_message = False
+                elif new_game:
+                    self.reset_game()
+                    show_main_menu = False
+                elif load_saved_game:
+                    try:
+                        self.player, self.entities, self.game_map, self.message_log, self.game_state = load_game()
+                        show_main_menu = False
+                    except FileNotFoundError:
+                        show_load_error_message = True
+                elif exit_game:
+                    break
+
+            else:
+                tcod.console_clear(self.main_console)
+                self.play_game()
+
+                show_main_menu = True
+
+    def play_game(self) -> bool:
         print("Running")
+
+        self.game_state = GameStates.PLAYERS_TURN
+        self.previous_game_state = GameStates.PLAYERS_TURN
+
+        self.fov_radius = self.constants['fov_radius']
+        self.fov_map = initialize_fov(self.game_map)
+
+        self.player_turn_results = []
 
         fov_recompute = True
 
@@ -84,6 +161,8 @@ class Game:
                 elif self.game_state == GameStates.TARGETING:
                     self.player_turn_results.append({'targeting_cancelled': True})
                 else:
+                    save_game(self.player, self.entities, self.game_map, self.message_log, self.game_state)
+
                     return True
 
             a_fullscreen = action.get('fullscreen')
