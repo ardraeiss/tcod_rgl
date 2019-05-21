@@ -47,11 +47,6 @@ class Game:
         self.render = None
         self.render = Render(self.main_console, self.constants['screen_width'], self.constants['screen_height'],
                              self.constants['colors'])
-#        self.render.set_map(self.game_map, self.map_buffer)
-#        self.render.set_panel(self.panel_buffer, self.constants['panel_height'],
-#                              self.constants['bar_width'], self.constants['panel_y'])
-
-#        self.render.set_message_log(self.message_log)
 
         self.reset_game()
 
@@ -60,16 +55,6 @@ class Game:
     def reset_game(self):
         self.player, self.entities, self.game_map, self.message_log, self.game_state = \
             get_game_variables(self.constants)
-
-#        self.render = Render(self.main_console, self.constants['screen_width'], self.constants['screen_height'],
-#                             self.constants['colors'])
-        self.render.set_map(self.game_map, self.map_buffer)
-        self.render.set_panel(self.panel_buffer, self.constants['panel_height'],
-                              self.constants['bar_width'], self.constants['panel_y'])
-
-        self.render.set_message_log(self.message_log)
-
-        self.targeting_item = None
 
     def run(self):
         show_main_menu = True
@@ -124,6 +109,14 @@ class Game:
 
         self.game_state = GameStates.PLAYERS_TURN
         self.previous_game_state = GameStates.PLAYERS_TURN
+
+        self.render.set_map(self.game_map, self.map_buffer)
+        self.render.set_panel(self.panel_buffer, self.constants['panel_height'],
+                              self.constants['bar_width'], self.constants['panel_y'])
+
+        self.render.set_message_log(self.message_log)
+
+        self.targeting_item = None
 
         self.fov_radius = self.constants['fov_radius']
         self.fov_map = initialize_fov(self.game_map)

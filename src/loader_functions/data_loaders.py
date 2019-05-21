@@ -2,7 +2,7 @@ import os
 import shelve
 
 
-save_name = 'savegame.dat'
+save_name = 'savegame'
 
 
 def save_game(player, entities, game_map, message_log, game_state):
@@ -15,7 +15,7 @@ def save_game(player, entities, game_map, message_log, game_state):
 
 
 def load_game():
-    if not os.path.isfile(save_name):
+    if not os.path.isfile("{}.dat".format(save_name)):
         raise FileNotFoundError
 
     with shelve.open(save_name, 'r') as data_file:
