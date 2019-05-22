@@ -1,16 +1,16 @@
 import tcod
 
-from enum import Enum
+from enum import Enum, auto
 
 from game_states import GameStates
 from menu import inventory_menu
 
 
 class RenderOrder(Enum):
-    STAIRS = 1
-    CORPSE = 2
-    ITEM = 3
-    ACTOR = 4
+    STAIRS = auto()
+    CORPSE = auto()
+    ITEM = auto()
+    ACTOR = auto()
 
 
 _colors = {
@@ -150,7 +150,7 @@ class Render:
 
     def draw_entity(self, entry, fov_map):
         # put entity character on screen
-        if fov_map.fov[entry.y, entry.x]:
+        if fov_map.fov[entry.y, entry.x] or (entry.stairs and self.game_map.tiles[entry.x][entry.y].explored):
             tcod.console_put_char_ex(self.map_buffer, entry.x, entry.y, entry.char, entry.color, tcod.black)
 
     def clear_entity(self, entry):

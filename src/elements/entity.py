@@ -42,6 +42,7 @@ class Entity:
             self.item.set_owner(self)
 
     def set_stairs(self, stairs=None):
+        self.stairs = stairs
         if self.stairs:
             self.stairs.owner = self
 
