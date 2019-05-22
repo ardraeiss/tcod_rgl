@@ -157,6 +157,24 @@ class GameMap:
 
         return entities
 
+    def next_floor(self, player, message_log, constants):
+        self.dungeon_level += 1
+        entities = [player]
+
+        self.room_min_size, self.room_max_size = constants['room_min_size'], constants['room_max_size']
+        self.width, self.height = constants['map_width'], constants['map_height']
+
+        self.tiles = self.initialize_tiles()
+        entities.extend(self.make_map(constants['max_rooms'], player,
+                                      constants['max_monsters_per_room'],
+                                      constants['max_items_per_room']))
+
+        player.fighter.heal(player.fighter.max_hp // 2)
+
+        message_log.add_message(Message('You take a moment to rest, and recover your strength.', tcod.light_violet))
+
+        return entities
+
 
 def spawn_troll(x, y):
     monster = Entity(x, y, 'T', tcod.darker_green, "Troll",

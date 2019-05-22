@@ -78,6 +78,8 @@ class Render:
             y += 1
 
         self.render_bar(1, 1, 'HP', player.fighter.hp, player.fighter.max_hp)
+        tcod.console_print_ex(self.panel_buffer, 1, 3, tcod.BKGND_NONE, tcod.LEFT,
+                              'Dungeon level: {0}'.format(self.game_map.dungeon_level))
 
         if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
             self.render_menu(game_state, player)

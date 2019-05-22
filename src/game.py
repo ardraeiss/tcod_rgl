@@ -147,6 +147,7 @@ class Game:
 
             self.do_targeting(left_click, right_click)
 
+            a_take_stairs = action.get('take_stairs')
             a_exit = action.get('exit')
             if a_exit:
                 if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
@@ -157,6 +158,19 @@ class Game:
                     save_game(self.player, self.entities, self.game_map, self.message_log, self.game_state)
 
                     return True
+
+            if a_take_stairs and self.game_state == GameStates.PLAYERS_TURN:
+                stairs = next((e for e in self.entities if e.stairs), None)
+                if stairs and stairs.x == self.player.x and stairs.y == self.player.y:
+                    self.entities = self.game_map.next_floor(self.player, self.message_log, self.constants)
+                    self.fov_map = initialize_fov(self.game_map)
+                    fov_recompute = True
+                    self.render.game_map = self.game_map
+
+                    tcod.console_clear(self.main_console)
+
+                else:
+                    self.message_log.add_message(Message('There are no stairs here.', tcod.yellow))
 
             a_fullscreen = action.get('fullscreen')
             if a_fullscreen:

@@ -35,6 +35,9 @@ def handle_player_turn_keys(key):
     if key_char == 'd':
         return {'drop_inventory': True}
 
+    elif key_char == '.' and key.shift:
+        return {'take_stairs': True}
+
     if key.vk == tcod.KEY_KPADD or (key_char == '=' and key.shift):
         return {'light_radius': 1}
     if key.vk == tcod.KEY_KPSUB or (key_char == '-' and not key.shift):
