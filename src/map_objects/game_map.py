@@ -6,6 +6,7 @@ from components.ai import BasicMonster
 from components.fighter import Fighter
 from components.item import Item
 from components.item_functions import heal, cast_lightning, cast_fireball, cast_confuse
+from components.stairs import Stairs
 from elements.entity import Entity
 from game_messages import Message
 from src.map_objects.tile import Tile
@@ -15,7 +16,7 @@ from render_functions import RenderOrder
 
 class GameMap:
     """ Game map for one screen """
-    def __init__(self, width, height, room_min_size, room_max_size):
+    def __init__(self, width, height, room_min_size, room_max_size, dungeon_level=1):
         self.width = width
         self.height = height
         self.room_min_size = room_min_size
@@ -24,6 +25,8 @@ class GameMap:
         self.tiles = self.initialize_tiles()
 
         self.rooms = []
+
+        self.dungeon_level = dungeon_level
 
         self.number_of_bosses = 0
         self.max_number_of_bosses = 0
@@ -71,6 +74,9 @@ class GameMap:
         entities = []
         num_rooms = 0
 
+        center_of_last_room_x = None
+        center_of_last_room_y = None
+
         for r in range(max_rooms):
             # random width and height
             w = randint(self.room_min_size, self.room_max_size)
@@ -92,25 +98,37 @@ class GameMap:
                 # center coordinates of new room, will be useful later
                 new_x, new_y = new_room.center()
 
+                center_of_last_room_x = new_x
+                center_of_last_room_y = new_y
+
                 if num_rooms > 0:
                     # connect all rooms after the first to the previous room with a tunnel
 
                     # center coordinates of previous room
                     (prev_x, prev_y) = self.rooms[num_rooms - 1].center()
 
-                    # flip a coin (random number that is either 0 or 1)
-                    if randint(0, 1) == 1:
-                        # first move horizontally, then vertically
-                        self.create_h_tunnel(prev_x, new_x, prev_y)
-                        self.create_v_tunnel(prev_y, new_y, new_x)
-                    else:
-                        # first move vertically, then horizontally
-                        self.create_v_tunnel(prev_y, new_y, prev_x)
-                        self.create_h_tunnel(prev_x, new_x, new_y)
+                    self.dig_tunnel_to_previous_room(new_x, new_y, prev_x, prev_y)
 
                 num_rooms += 1
 
+        stairs_component = Stairs(self.dungeon_level + 1)
+        down_stairs = Entity(center_of_last_room_x, center_of_last_room_y, '>', tcod.white, 'Stairs',
+                             render_order=RenderOrder.STAIRS)
+        down_stairs.set_stairs(stairs_component)
+        entities.append(down_stairs)
+
         return entities
+
+    def dig_tunnel_to_previous_room(self, new_x, new_y, prev_x, prev_y):
+        # flip a coin (random number that is either 0 or 1)
+        if randint(0, 1) == 1:
+            # first move horizontally, then vertically
+            self.create_h_tunnel(prev_x, new_x, prev_y)
+            self.create_v_tunnel(prev_y, new_y, new_x)
+        else:
+            # first move vertically, then horizontally
+            self.create_v_tunnel(prev_y, new_y, prev_x)
+            self.create_h_tunnel(prev_x, new_x, new_y)
 
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
