@@ -148,6 +148,7 @@ class Game:
             self.do_targeting(left_click, right_click)
 
             a_take_stairs = action.get('take_stairs')
+            a_level_up = action.get('level_up')
             a_exit = action.get('exit')
             if a_exit:
                 if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
@@ -171,6 +172,17 @@ class Game:
 
                 else:
                     self.message_log.add_message(Message('There are no stairs here.', tcod.yellow))
+
+            if a_level_up:
+                if a_level_up == 'hp':
+                    self.player.fighter.max_hp += 20
+                    self.player.fighter.hp += 20
+                elif a_level_up == 'str':
+                    self.player.fighter.power += 1
+                elif a_level_up == 'def':
+                    self.player.fighter.defense += 1
+
+                self.game_state = self.previous_game_state
 
             a_fullscreen = action.get('fullscreen')
             if a_fullscreen:
@@ -275,9 +287,14 @@ class Game:
         self.message_log.add_message(Message('You gain {0} experience points.'.format(xp)))
 
         if leveled_up:
-            self.message_log.add_message(Message(
-                'Your battle skills grow stronger! You reached level {0}'.format(
-                    self.player.level.current_level) + '!', tcod.yellow))
+            self.level_player_up()
+
+    def level_player_up(self):
+        self.message_log.add_message(Message(
+            'Your battle skills grow stronger! You reached level {0}'.format(
+                self.player.level.current_level) + '!', tcod.yellow))
+        self.previous_game_state = self.game_state
+        self.game_state = GameStates.LEVEL_UP
 
     def pick_up_item(self, item_added):
         self.entities.remove(item_added)

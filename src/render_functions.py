@@ -3,7 +3,7 @@ import tcod
 from enum import Enum, auto
 
 from game_states import GameStates
-from menu import inventory_menu
+from menu import inventory_menu, level_up_menu
 
 
 class RenderOrder(Enum):
@@ -81,7 +81,7 @@ class Render:
         tcod.console_print_ex(self.panel_buffer, 1, 3, tcod.BKGND_NONE, tcod.LEFT,
                               'Dungeon level: {0}'.format(self.game_map.dungeon_level))
 
-        if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
+        if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY, GameStates.LEVEL_UP):
             self.render_menu(game_state, player)
 
         tcod.console_set_default_foreground(self.panel_buffer, tcod.light_gray)
@@ -128,11 +128,15 @@ class Render:
     def render_menu(self, game_state, player):
         if game_state == GameStates.SHOW_INVENTORY:
             text = "Press the key next to an item to use it, or Esc to cancel.\n"
-        else:
+            inventory_menu(self.main_console, text,
+                           player.inventory, 50, self.screen_width, self.screen_height)
+        elif game_state == GameStates.DROP_INVENTORY:
             text = "Press the key net to an item to drop it, or Esc to cancel.\n"
-
-        inventory_menu(self.main_console, text,
-                       player.inventory, 50, self.screen_width, self.screen_height)
+            inventory_menu(self.main_console, text,
+                           player.inventory, 50, self.screen_width, self.screen_height)
+        elif game_state == GameStates.LEVEL_UP:
+            level_up_menu(self.main_console, 'Level up! Choose a stat to raise:',
+                          player, 40, self.screen_width, self.screen_height)
 
     def get_tile_colors(self, tile, visible: bool) -> tcod.Color:
         if visible:
