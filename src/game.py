@@ -241,6 +241,7 @@ class Game:
             item_consumed = player_turn_result.get('consumed')
             targeting = player_turn_result.get('targeting')
             targeting_cancelled = player_turn_result.get('targeting_cancelled')
+            xp = player_turn_result.get('xp')
 
             if message:
                 self.message_log.add_message(message)
@@ -264,7 +265,19 @@ class Game:
                 self.game_state = self.previous_game_state
 
                 self.message_log.add_message(Message('Targeting cancelled'))
+            elif xp:
+                self.give_xp(xp)
+
         self.player_turn_results = []
+
+    def give_xp(self, xp):
+        leveled_up = self.player.level.add_xp(xp)
+        self.message_log.add_message(Message('You gain {0} experience points.'.format(xp)))
+
+        if leveled_up:
+            self.message_log.add_message(Message(
+                'Your battle skills grow stronger! You reached level {0}'.format(
+                    self.player.level.current_level) + '!', tcod.yellow))
 
     def pick_up_item(self, item_added):
         self.entities.remove(item_added)

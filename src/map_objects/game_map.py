@@ -112,8 +112,8 @@ class GameMap:
                 num_rooms += 1
 
         stairs_component = Stairs(self.dungeon_level + 1)
-        down_stairs = Entity(center_of_last_room_x, center_of_last_room_y, '>', tcod.white, 'Stairs',
-                             render_order=RenderOrder.STAIRS)
+        down_stairs = Entity(center_of_last_room_x, center_of_last_room_y, render_order=RenderOrder.STAIRS)
+        down_stairs.set_appearance('>', tcod.white, 'Stairs')
         down_stairs.set_stairs(stairs_component)
         entities.append(down_stairs)
 
@@ -177,26 +177,26 @@ class GameMap:
 
 
 def spawn_troll(x, y):
-    monster = Entity(x, y, 'T', tcod.darker_green, "Troll",
-                     render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster.set_appearance('T', tcod.darker_green, "Troll")
     monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=16, defense=1, power=4))
+    monster.set_combat_info(Fighter(hp=16, defense=1, power=4, xp=100))
     return monster
 
 
 def spawn_orc(x, y):
-    monster = Entity(x, y, 'o', tcod.desaturated_green, "Orc",
-                     render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster.set_appearance('o', tcod.desaturated_green, "Orc")
     monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=10, defense=0, power=3))
+    monster.set_combat_info(Fighter(hp=10, defense=0, power=3, xp=35))
     return monster
 
 
 def spawn_dragon(x, y):
-    monster = Entity(x, y, 'D', tcod.light_flame, "Red Dragon",
-                     render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster.set_appearance('D', tcod.light_flame, "Red Dragon")
     monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=20, defense=3, power=5))
+    monster.set_combat_info(Fighter(hp=20, defense=3, power=5, xp=300))
     return monster
 
 
@@ -243,7 +243,8 @@ def place_items(room, max_items_per_room):
             item_component = Item(use_function=heal, amount=4)
 
         if not any([entity for entity in items if entity.x == x and entity.y == y]):
-            item = Entity(x, y, char, color, name, render_order=RenderOrder.ITEM)
+            item = Entity(x, y, render_order=RenderOrder.ITEM)
+            item.set_appearance(char, color, name)
             item.set_item(item_component)
             items.append(item)
 

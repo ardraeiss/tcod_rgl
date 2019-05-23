@@ -2,6 +2,7 @@ import tcod as tcod
 
 from components.fighter import Fighter
 from components.inventory import Inventory
+from components.level import Level
 from elements.entity import Entity
 from game_map import GameMap
 from game_messages import MessageLog
@@ -80,9 +81,11 @@ def get_constants():
 def get_game_variables(constants):
     fighter_component = Fighter(hp=30, defense=2, power=5)
     inventory_component = Inventory(26)
-    player = Entity(0, 0, '@', tcod.white, 'Player', blocks_movement=True, render_order=RenderOrder.ACTOR)
+    player = Entity(0, 0, blocks_movement=True, render_order=RenderOrder.ACTOR)
+    player.set_appearance('@', tcod.white, 'Player')
     player.set_combat_info(fighter_component)
     player.set_inventory(inventory_component)
+    player.set_level(Level())
     entities = [player]
 
     game_map = GameMap(constants['map_width'], constants['map_height'],
