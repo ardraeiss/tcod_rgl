@@ -147,9 +147,17 @@ class Game:
 
             self.do_targeting(left_click, right_click)
 
+            a_take_stairs = action.get('take_stairs')
+            a_level_up = action.get('level_up')
+            a_show_character_screen = action.get('show_character_screen')
+
+            if a_show_character_screen:
+                self.previous_game_state = self.game_state
+                self.game_state = GameStates.CHARACTER_SCREEN
+
             a_exit = action.get('exit')
             if a_exit:
-                if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
+                if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY, GameStates.CHARACTER_SCREEN):
                     self.game_state = self.previous_game_state
                 elif self.game_state == GameStates.TARGETING:
                     self.player_turn_results.append({'targeting_cancelled': True})
@@ -157,6 +165,30 @@ class Game:
                     save_game(self.player, self.entities, self.game_map, self.message_log, self.game_state)
 
                     return True
+
+            if a_take_stairs and self.game_state == GameStates.PLAYERS_TURN:
+                stairs = next((e for e in self.entities if e.stairs), None)
+                if stairs and stairs.x == self.player.x and stairs.y == self.player.y:
+                    self.entities = self.game_map.next_floor(self.player, self.message_log, self.constants)
+                    self.fov_map = initialize_fov(self.game_map)
+                    fov_recompute = True
+                    self.render.game_map = self.game_map
+
+                    tcod.console_clear(self.main_console)
+
+                else:
+                    self.message_log.add_message(Message('There are no stairs here.', tcod.yellow))
+
+            if a_level_up:
+                if a_level_up == 'hp':
+                    self.player.fighter.max_hp += 20
+                    self.player.fighter.hp += 20
+                elif a_level_up == 'str':
+                    self.player.fighter.power += 1
+                elif a_level_up == 'def':
+                    self.player.fighter.defense += 1
+
+                self.game_state = self.previous_game_state
 
             a_fullscreen = action.get('fullscreen')
             if a_fullscreen:
@@ -227,6 +259,7 @@ class Game:
             item_consumed = player_turn_result.get('consumed')
             targeting = player_turn_result.get('targeting')
             targeting_cancelled = player_turn_result.get('targeting_cancelled')
+            xp = player_turn_result.get('xp')
 
             if message:
                 self.message_log.add_message(message)
@@ -250,7 +283,24 @@ class Game:
                 self.game_state = self.previous_game_state
 
                 self.message_log.add_message(Message('Targeting cancelled'))
+            elif xp:
+                self.give_xp(xp)
+
         self.player_turn_results = []
+
+    def give_xp(self, xp):
+        leveled_up = self.player.level.add_xp(xp)
+        self.message_log.add_message(Message('You gain {0} experience points.'.format(xp)))
+
+        if leveled_up:
+            self.level_player_up()
+
+    def level_player_up(self):
+        self.message_log.add_message(Message(
+            'Your battle skills grow stronger! You reached level {0}'.format(
+                self.player.level.current_level) + '!', tcod.yellow))
+        self.previous_game_state = self.game_state
+        self.game_state = GameStates.LEVEL_UP
 
     def pick_up_item(self, item_added):
         self.entities.remove(item_added)

@@ -4,21 +4,27 @@ from render_functions import RenderOrder
 
 
 class Entity:
-    def __init__(self, x, y, char, color, name, blocks_movement=True,
+    def __init__(self, x, y, blocks_movement=True,
                  render_order=RenderOrder.CORPSE):
-        self.name = name
-
         self.x = x
         self.y = y
-        self.char = char
-        self.color = color
         self.render_order = render_order
-
         self.blocks_movement = blocks_movement
+
+        self.name = "NOBODY"
+        self.char = None
+        self.color = None
         self.fighter = None
         self.ai = None
         self.inventory = None
         self.item = None
+        self.stairs = None
+        self.level = None
+
+    def set_appearance(self, char, color, name):
+        self.char = char
+        self.color = color
+        self.name = name
 
     def set_combat_info(self, fighter=None):
         self.fighter = fighter
@@ -39,6 +45,16 @@ class Entity:
         self.item = item
         if self.item:
             self.item.set_owner(self)
+
+    def set_stairs(self, stairs=None):
+        self.stairs = stairs
+        if self.stairs:
+            self.stairs.owner = self
+
+    def set_level(self, level=None):
+        self.level = level
+        if self.level:
+            self.level.owner = None
 
     def is_alive(self):
         return self.fighter and self.fighter.hp > 0
