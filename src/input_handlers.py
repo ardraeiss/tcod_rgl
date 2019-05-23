@@ -19,6 +19,9 @@ def handle_keys(key, game_state):
     if game_state == GameStates.LEVEL_UP:
         return handle_level_up_menu(key)
 
+    if game_state == GameStates.CHARACTER_SCREEN:
+        return handle_character_screen(key)
+
     return {}
 
 
@@ -40,6 +43,9 @@ def handle_player_turn_keys(key):
 
     elif key_char == '.' and key.shift:
         return {'take_stairs': True}
+
+    elif key_char == 'c':
+        return {'show_character_screen': True}
 
     if key.vk == tcod.KEY_KPADD or (key_char == '=' and key.shift):
         return {'light_radius': 1}
@@ -153,5 +159,12 @@ def handle_level_up_menu(key):
             return {'level_up': 'str'}
         elif key_char == 'c':
             return {'level_up': 'def'}
+
+    return {}
+
+
+def handle_character_screen(key):
+    if key.vk == tcod.KEY_ESCAPE:
+        return {'exit': True}
 
     return {}

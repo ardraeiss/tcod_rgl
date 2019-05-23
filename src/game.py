@@ -149,9 +149,15 @@ class Game:
 
             a_take_stairs = action.get('take_stairs')
             a_level_up = action.get('level_up')
+            a_show_character_screen = action.get('show_character_screen')
+
+            if a_show_character_screen:
+                self.previous_game_state = self.game_state
+                self.game_state = GameStates.CHARACTER_SCREEN
+
             a_exit = action.get('exit')
             if a_exit:
-                if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
+                if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY, GameStates.CHARACTER_SCREEN):
                     self.game_state = self.previous_game_state
                 elif self.game_state == GameStates.TARGETING:
                     self.player_turn_results.append({'targeting_cancelled': True})
