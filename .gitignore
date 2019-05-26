@@ -185,3 +185,6 @@ $RECYCLE.BIN/
 *.lnk
 
 .idea
+savegame.dir
+savegame.dat
+savegame.dak
