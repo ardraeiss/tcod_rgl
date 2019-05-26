@@ -140,8 +140,10 @@ class GameMap:
         number_of_monsters = randint(0, max_monsters_per_room)
 
         monster_chances = {
-            'orc': 80,
+            'kobold': from_dungeon_level([[80, 1], [40, 3], [20, 4], [0, 5]], self.dungeon_level),
+            'orc': from_dungeon_level([[40, 1], [80, 2]], self.dungeon_level),
             'troll': from_dungeon_level([[15, 3], [30, 5], [60, 7]], self.dungeon_level),
+            'ogre': from_dungeon_level([[20, 2], [15, 4], [0, 6]], self.dungeon_level),
             'red_dragon': from_dungeon_level([[5, 5], [10, 6], [15, 7]], self.dungeon_level),
         }
 
@@ -156,10 +158,15 @@ class GameMap:
                 if monster_choice == 'red_dragon' and self.number_of_bosses < self.max_number_of_bosses:
                     monster = spawn_dragon(x, y)
                     self.number_of_bosses += 1
+                elif monster_choice == 'ogre' and self.number_of_bosses < self.max_number_of_bosses:
+                    monster = spawn_ogre(x, y)
+                    self.number_of_bosses += 1
                 elif monster_choice == 'troll':
                     monster = spawn_troll(x, y)
-                else:
+                elif monster_choice == 'orc':
                     monster = spawn_orc(x, y)
+                else:
+                    monster = spawn_kobold(x, y)
 
                 entities.append(monster)
 
@@ -229,7 +236,7 @@ class GameMap:
         self.dungeon_level += 1
         entities = [player]
 
-        self.max_number_of_bosses = from_dungeon_level([[1, 3], [2, 5], [3, 7], [5, 8], [8, 9]], self.dungeon_level)
+        self.max_number_of_bosses = from_dungeon_level([[1, 2], [2, 5], [3, 7], [5, 8], [8, 9]], self.dungeon_level)
 
         self.room_min_size, self.room_max_size = constants['room_min_size'], constants['room_max_size']
         self.width, self.height = constants['map_width'], constants['map_height']
@@ -244,19 +251,35 @@ class GameMap:
         return entities
 
 
-def spawn_troll(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
-    monster.set_appearance('T', tcod.darker_green, "Troll")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=30, defense=2, power=8, xp=100))
-    return monster
-
-
 def spawn_orc(x, y):
     monster = Entity(x, y, render_order=RenderOrder.ACTOR)
     monster.set_appearance('o', tcod.desaturated_green, "Orc")
     monster.set_ai(BasicMonster())
     monster.set_combat_info(Fighter(hp=20, defense=0, power=4, xp=35))
+    return monster
+
+
+def spawn_kobold(x, y):
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster.set_appearance('k', tcod.desaturated_green, "Kobold")
+    monster.set_ai(BasicMonster())
+    monster.set_combat_info(Fighter(hp=10, defense=0, power=3, xp=25))
+    return monster
+
+
+def spawn_ogre(x, y):
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster.set_appearance('O', tcod.desaturated_green, "Ogre")
+    monster.set_ai(BasicMonster())
+    monster.set_combat_info(Fighter(hp=25, defense=1, power=6, xp=75))
+    return monster
+
+
+def spawn_troll(x, y):
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster.set_appearance('T', tcod.darker_green, "Troll")
+    monster.set_ai(BasicMonster())
+    monster.set_combat_info(Fighter(hp=30, defense=2, power=8, xp=100))
     return monster
 
 
