@@ -188,12 +188,12 @@ class GameMap:
                 name = "Healing Potion"
                 color = tcod.violet
                 char = '!'
-                item_component = Item(use_function=heal, amount=4)
+                item_component = Item(use_function=heal, amount=40)
             elif item_choice == 'super_healing':
                 name = "Mega Healing Potion"
                 color = tcod.lighter_violet
                 char = '!'
-                item_component = Item(use_function=heal, amount=8)
+                item_component = Item(use_function=heal, amount=80)
             elif item_choice == 'confusion_scroll':
                 name = "Scroll of Confusion"
                 color = tcod.light_pink
@@ -204,7 +204,7 @@ class GameMap:
                 name = "Scroll of Lightning"
                 color = tcod.yellow
                 char = '~'
-                item_component = Item(use_function=cast_lightning, damage=20, maximum_range=5)
+                item_component = Item(use_function=cast_lightning, damage=40, maximum_range=5)
             elif item_choice == 'fireball_scroll':
                 name = "Scroll of Fireball"
                 color = tcod.flame
@@ -215,7 +215,7 @@ class GameMap:
                     targeting_message=Message(
                         "Left-click a target tile for the fireball, or right-click to cancel.",
                         tcod.light_cyan),
-                    damage=12, radius=3)
+                    damage=25, radius=3)
 
             if not any([entity for entity in items if entity.x == x and entity.y == y]):
                 item = Entity(x, y, render_order=RenderOrder.ITEM)
@@ -246,7 +246,7 @@ def spawn_troll(x, y):
     monster = Entity(x, y, render_order=RenderOrder.ACTOR)
     monster.set_appearance('T', tcod.darker_green, "Troll")
     monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=16, defense=1, power=4, xp=100))
+    monster.set_combat_info(Fighter(hp=30, defense=2, power=8, xp=100))
     return monster
 
 
@@ -254,7 +254,7 @@ def spawn_orc(x, y):
     monster = Entity(x, y, render_order=RenderOrder.ACTOR)
     monster.set_appearance('o', tcod.desaturated_green, "Orc")
     monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=10, defense=0, power=3, xp=35))
+    monster.set_combat_info(Fighter(hp=20, defense=0, power=4, xp=35))
     return monster
 
 
@@ -262,5 +262,5 @@ def spawn_dragon(x, y):
     monster = Entity(x, y, render_order=RenderOrder.ACTOR)
     monster.set_appearance('D', tcod.light_flame, "Red Dragon")
     monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=20, defense=3, power=5, xp=300))
+    monster.set_combat_info(Fighter(hp=35, defense=4, power=12, xp=300))
     return monster
