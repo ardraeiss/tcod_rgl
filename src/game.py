@@ -181,8 +181,8 @@ class Game:
 
             if a_level_up:
                 if a_level_up == 'hp':
-                    self.player.fighter.max_hp += 20
-                    self.player.fighter.hp += 20
+                    self.player.fighter.max_hp += 10
+                    self.player.fighter.hp += 10
                 elif a_level_up == 'str':
                     self.player.fighter.power += 1
                 elif a_level_up == 'def':

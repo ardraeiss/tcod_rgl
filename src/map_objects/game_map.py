@@ -9,6 +9,7 @@ from components.item_functions import heal, cast_lightning, cast_fireball, cast_
 from components.stairs import Stairs
 from elements.entity import Entity
 from game_messages import Message
+from random_utils import random_choice_from_dict
 from src.map_objects.tile import Tile
 from src.map_objects.rect import Rect
 from render_functions import RenderOrder
@@ -138,20 +139,23 @@ class GameMap:
         # Get a random number of monsters
         number_of_monsters = randint(0, max_monsters_per_room)
 
+        monster_chances = {'orc': 80, 'troll': 20, 'red_dragon': 5}
+
         for i in range(number_of_monsters):
             # Choose a random location in the room
             x = randint(room.x1 + 1, room.x2 - 1)
             y = randint(room.y1 + 1, room.y2 - 1)
 
             if not any([entity for entity in entities if entity.x == x and entity.y == y]):
-                chance = randint(0, 100)
-                if chance >= 90 and self.number_of_bosses < self.max_number_of_bosses:
+                monster_choice = random_choice_from_dict(monster_chances)
+
+                if monster_choice == 'red_dragon' and self.number_of_bosses < self.max_number_of_bosses:
                     monster = spawn_dragon(x, y)
                     self.number_of_bosses += 1
-                elif chance < 80:
-                    monster = spawn_orc(x, y)
-                else:
+                elif monster_choice == 'troll':
                     monster = spawn_troll(x, y)
+                else:
+                    monster = spawn_orc(x, y)
 
                 entities.append(monster)
 
@@ -204,28 +208,37 @@ def place_items(room, max_items_per_room):
     items = []
 
     number_of_items = randint(0, max_items_per_room)
+    item_chances = {'healing_potion': 60, 'super_healing': 10,
+                    'lightning_scroll': 10, 'fireball_scroll': 10,
+                    'confusion_scroll': 10,}
 
     for i in range(number_of_items):
         x = randint(room.x1 + 1, room.x2 - 1)
         y = randint(room.y1 + 1, room.y2 - 1)
-        chance = randint(0, 100)
-        if chance < 5:
+
+        item_choice = random_choice_from_dict(item_chances)
+        if item_choice == 'healing_potion':
+            name = "Healing Potion"
+            color = tcod.violet
+            char = '!'
+            item_component = Item(use_function=heal, amount=4)
+        elif item_choice == 'super_healing':
             name = "Mega Healing Potion"
             color = tcod.lighter_violet
             char = '!'
             item_component = Item(use_function=heal, amount=8)
-        if chance < 20:
+        elif item_choice == 'confusion_scroll':
             name = "Scroll of Confusion"
             color = tcod.light_pink
             char = '~'
             item_component = Item(use_function=cast_confuse, targeting=True, targeting_message=Message(
                         'Left-click an enemy to confuse it, or right-click to cancel.', tcod.light_cyan))
-        elif chance < 30:
+        elif item_choice == 'lightning_scroll':
             name = "Scroll of Lightning"
             color = tcod.yellow
             char = '~'
             item_component = Item(use_function=cast_lightning, damage=20, maximum_range=5)
-        elif chance < 60:
+        elif item_choice == 'fireball_scroll':
             name = "Scroll of Fireball"
             color = tcod.flame
             char = '~'
@@ -236,11 +249,6 @@ def place_items(room, max_items_per_room):
                     "Left-click a target tile for the fireball, or right-click to cancel.",
                     tcod.light_cyan),
                 damage=12, radius=3)
-        else:
-            name = "Healing Potion"
-            color = tcod.violet
-            char = '!'
-            item_component = Item(use_function=heal, amount=4)
 
         if not any([entity for entity in items if entity.x == x and entity.y == y]):
             item = Entity(x, y, render_order=RenderOrder.ITEM)
