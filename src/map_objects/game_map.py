@@ -9,7 +9,7 @@ from components.item_functions import heal, cast_lightning, cast_fireball, cast_
 from components.stairs import Stairs
 from elements.entity import Entity
 from game_messages import Message
-from random_utils import random_choice_from_dict
+from random_utils import random_choice_from_dict, from_dungeon_level
 from src.map_objects.tile import Tile
 from src.map_objects.rect import Rect
 from render_functions import RenderOrder
@@ -30,7 +30,7 @@ class GameMap:
         self.dungeon_level = dungeon_level
 
         self.number_of_bosses = 0
-        self.max_number_of_bosses = 0
+        self.max_number_of_bosses = from_dungeon_level([[1, 3], [3, 5], [7, 7]], self.dungeon_level)
 
     def initialize_tiles(self):
         """ Fill map with impassable walls """
@@ -58,9 +58,8 @@ class GameMap:
 
     ##
     # Map creation
-    def make_map(self, max_rooms, player, max_monsters_per_room, max_items_per_room):
-        entities = self.generate_rooms(self.width, self.height, max_rooms,
-                                       max_monsters_per_room, max_items_per_room)
+    def make_map(self, max_rooms, player):
+        entities = self.generate_rooms(self.width, self.height, max_rooms)
 
         # the first room is where the player starts at
         player.x, player.y = self.rooms[0].center()
@@ -70,7 +69,7 @@ class GameMap:
 
         return entities
 
-    def generate_rooms(self, map_width, map_height, max_rooms, max_monsters_per_room, max_items_per_room):
+    def generate_rooms(self, map_width, map_height, max_rooms):
         self.rooms = []
         entities = []
         num_rooms = 0
@@ -92,8 +91,8 @@ class GameMap:
                 if new_room.intersect(other_room):
                     break
             else:
-                entities.extend(self.place_entities(new_room, max_monsters_per_room))
-                entities.extend(place_items(new_room, max_items_per_room))
+                entities.extend(self.place_entities(new_room))
+                entities.extend(self.place_items(new_room))
                 self.rooms.append(new_room)
 
                 # center coordinates of new room, will be useful later
@@ -134,12 +133,17 @@ class GameMap:
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
 
-    def place_entities(self, room, max_monsters_per_room):
+    def place_entities(self, room):
         entities = []
         # Get a random number of monsters
+        max_monsters_per_room = from_dungeon_level([[2, 1], [3, 4], [5, 6]], self.dungeon_level)
         number_of_monsters = randint(0, max_monsters_per_room)
 
-        monster_chances = {'orc': 80, 'troll': 20, 'red_dragon': 5}
+        monster_chances = {
+            'orc': 80,
+            'troll': from_dungeon_level([[15, 3], [30, 5], [60, 7]], self.dungeon_level),
+            'red_dragon': from_dungeon_level([[5, 5], [10, 6], [15, 7]], self.dungeon_level),
+        }
 
         for i in range(number_of_monsters):
             # Choose a random location in the room
@@ -161,6 +165,66 @@ class GameMap:
 
         return entities
 
+    def place_items(self, room):
+        items = []
+
+        max_items_per_room = from_dungeon_level([[1, 1], [2, 4]], self.dungeon_level)
+        number_of_items = randint(0, max_items_per_room)
+
+        item_chances = {
+            'healing_potion': 35,
+            'super_healing': from_dungeon_level([[10, 3]], self.dungeon_level),
+            'lightning_scroll': from_dungeon_level([[25, 4]], self.dungeon_level),
+            'fireball_scroll': from_dungeon_level([[25, 6]], self.dungeon_level),
+            'confusion_scroll': from_dungeon_level([[10, 2]], self.dungeon_level)
+        }
+
+        for i in range(number_of_items):
+            x = randint(room.x1 + 1, room.x2 - 1)
+            y = randint(room.y1 + 1, room.y2 - 1)
+
+            item_choice = random_choice_from_dict(item_chances)
+            if item_choice == 'healing_potion':
+                name = "Healing Potion"
+                color = tcod.violet
+                char = '!'
+                item_component = Item(use_function=heal, amount=4)
+            elif item_choice == 'super_healing':
+                name = "Mega Healing Potion"
+                color = tcod.lighter_violet
+                char = '!'
+                item_component = Item(use_function=heal, amount=8)
+            elif item_choice == 'confusion_scroll':
+                name = "Scroll of Confusion"
+                color = tcod.light_pink
+                char = '~'
+                item_component = Item(use_function=cast_confuse, targeting=True, targeting_message=Message(
+                    'Left-click an enemy to confuse it, or right-click to cancel.', tcod.light_cyan))
+            elif item_choice == 'lightning_scroll':
+                name = "Scroll of Lightning"
+                color = tcod.yellow
+                char = '~'
+                item_component = Item(use_function=cast_lightning, damage=20, maximum_range=5)
+            elif item_choice == 'fireball_scroll':
+                name = "Scroll of Fireball"
+                color = tcod.flame
+                char = '~'
+                item_component = Item(
+                    use_function=cast_fireball,
+                    targeting=True,
+                    targeting_message=Message(
+                        "Left-click a target tile for the fireball, or right-click to cancel.",
+                        tcod.light_cyan),
+                    damage=12, radius=3)
+
+            if not any([entity for entity in items if entity.x == x and entity.y == y]):
+                item = Entity(x, y, render_order=RenderOrder.ITEM)
+                item.set_appearance(char, color, name)
+                item.set_item(item_component)
+                items.append(item)
+
+        return items
+
     def next_floor(self, player, message_log, constants):
         self.dungeon_level += 1
         entities = [player]
@@ -169,9 +233,7 @@ class GameMap:
         self.width, self.height = constants['map_width'], constants['map_height']
 
         self.tiles = self.initialize_tiles()
-        entities.extend(self.make_map(constants['max_rooms'], player,
-                                      constants['max_monsters_per_room'],
-                                      constants['max_items_per_room']))
+        entities.extend(self.make_map(constants['max_rooms'], player))
 
         player.fighter.heal(player.fighter.max_hp // 2)
 
@@ -202,58 +264,3 @@ def spawn_dragon(x, y):
     monster.set_ai(BasicMonster())
     monster.set_combat_info(Fighter(hp=20, defense=3, power=5, xp=300))
     return monster
-
-
-def place_items(room, max_items_per_room):
-    items = []
-
-    number_of_items = randint(0, max_items_per_room)
-    item_chances = {'healing_potion': 60, 'super_healing': 10,
-                    'lightning_scroll': 10, 'fireball_scroll': 10,
-                    'confusion_scroll': 10,}
-
-    for i in range(number_of_items):
-        x = randint(room.x1 + 1, room.x2 - 1)
-        y = randint(room.y1 + 1, room.y2 - 1)
-
-        item_choice = random_choice_from_dict(item_chances)
-        if item_choice == 'healing_potion':
-            name = "Healing Potion"
-            color = tcod.violet
-            char = '!'
-            item_component = Item(use_function=heal, amount=4)
-        elif item_choice == 'super_healing':
-            name = "Mega Healing Potion"
-            color = tcod.lighter_violet
-            char = '!'
-            item_component = Item(use_function=heal, amount=8)
-        elif item_choice == 'confusion_scroll':
-            name = "Scroll of Confusion"
-            color = tcod.light_pink
-            char = '~'
-            item_component = Item(use_function=cast_confuse, targeting=True, targeting_message=Message(
-                        'Left-click an enemy to confuse it, or right-click to cancel.', tcod.light_cyan))
-        elif item_choice == 'lightning_scroll':
-            name = "Scroll of Lightning"
-            color = tcod.yellow
-            char = '~'
-            item_component = Item(use_function=cast_lightning, damage=20, maximum_range=5)
-        elif item_choice == 'fireball_scroll':
-            name = "Scroll of Fireball"
-            color = tcod.flame
-            char = '~'
-            item_component = Item(
-                use_function=cast_fireball,
-                targeting=True,
-                targeting_message=Message(
-                    "Left-click a target tile for the fireball, or right-click to cancel.",
-                    tcod.light_cyan),
-                damage=12, radius=3)
-
-        if not any([entity for entity in items if entity.x == x and entity.y == y]):
-            item = Entity(x, y, render_order=RenderOrder.ITEM)
-            item.set_appearance(char, color, name)
-            item.set_item(item_component)
-            items.append(item)
-
-    return items

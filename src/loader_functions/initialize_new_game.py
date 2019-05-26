@@ -38,10 +38,6 @@ def get_constants():
     fov_light_walls = True
     fov_radius = 10
 
-    max_monsters_per_room = 3
-    max_bosses_per_map = 0
-    max_items_per_room = 2
-
     colors = {
         'dark_wall': tcod.Color(0, 0, 100),
         'dark_ground': tcod.Color(50, 50, 150),
@@ -69,9 +65,6 @@ def get_constants():
         'fov_algorithm': fov_algorithm,
         'fov_light_walls': fov_light_walls,
         'fov_radius': fov_radius,
-        'max_monsters_per_room': max_monsters_per_room,
-        'max_bosses_per_map': max_bosses_per_map,
-        'max_items_per_room': max_items_per_room,
         'colors': colors
     }
 
@@ -90,8 +83,7 @@ def get_game_variables(constants):
 
     game_map = GameMap(constants['map_width'], constants['map_height'],
                        constants['room_min_size'], constants['room_max_size'])
-    entities.extend(game_map.make_map(constants['max_rooms'], player,
-                    constants['max_monsters_per_room'], constants['max_items_per_room']))
+    entities.extend(game_map.make_map(constants['max_rooms'], player))
 
     message_log = MessageLog(constants['message_x'], constants['message_width'], constants['message_height'])
 
