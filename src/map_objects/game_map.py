@@ -229,6 +229,8 @@ class GameMap:
         self.dungeon_level += 1
         entities = [player]
 
+        self.max_number_of_bosses = from_dungeon_level([[1, 3], [2, 5], [3, 7], [5, 8], [8, 9]], self.dungeon_level)
+
         self.room_min_size, self.room_max_size = constants['room_min_size'], constants['room_max_size']
         self.width, self.height = constants['map_width'], constants['map_height']
 
