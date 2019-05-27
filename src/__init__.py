@@ -1,10 +1,11 @@
-from engine import Engine
+from src.game import Game
 
 
 def main():
     print('Hello World!')
-    engine = Engine()
-    engine.run()
+    session = Game()
+    print("Game: {}".format(session))
+    session.run()
 
 
 if __name__ == '__main__':
