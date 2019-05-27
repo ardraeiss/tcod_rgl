@@ -1,11 +1,16 @@
+from typing import Dict
+
 import math
 import tcod
+
+from components.item import Item
 from render_functions import RenderOrder
 
 
 class Entity:
     def __init__(self, x, y, blocks_movement=True,
-                 render_order=RenderOrder.CORPSE):
+                 render_order=RenderOrder.CORPSE,
+                 components: Dict = None):
         self.x = x
         self.y = y
         self.render_order = render_order
@@ -21,40 +26,34 @@ class Entity:
         self.stairs = None
         self.level = None
 
+        self.fighter = None
+        self.ai = None
+        self.inventory = None
+        self.item = None
+        self.stairs = None
+        self.level = None
+        self.equipment = None
+        self.equippable = None
+
+        if components:
+            self.init_components(components)
+
+    def init_components(self, components):
+        for name in ('fighter', 'ai', 'inventory', 'item', 'stairs', 'level', 'equipment', 'equippable'):
+            comp = components.get(name, None)
+            if comp:
+                self.__dict__[name] = comp
+                comp.set_owner(self)
+
+        if self.equippable and not self.item:
+            item = Item()
+            self.item = item
+            self.item.set_owner(self)
+
     def set_appearance(self, char, color, name):
         self.char = char
         self.color = color
         self.name = name
-
-    def set_combat_info(self, fighter=None):
-        self.fighter = fighter
-        if self.fighter:
-            self.fighter.set_owner(self)
-
-    def set_ai(self, ai=None):
-        self.ai = ai
-        if self.ai:
-            self.ai.set_owner(self)
-
-    def set_inventory(self, inventory=None):
-        self.inventory = inventory
-        if self.inventory:
-            self.inventory.set_owner(self)
-
-    def set_item(self, item=None):
-        self.item = item
-        if self.item:
-            self.item.set_owner(self)
-
-    def set_stairs(self, stairs=None):
-        self.stairs = stairs
-        if self.stairs:
-            self.stairs.owner = self
-
-    def set_level(self, level=None):
-        self.level = level
-        if self.level:
-            self.level.owner = None
 
     def is_alive(self):
         return self.fighter and self.fighter.hp > 0

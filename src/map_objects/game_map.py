@@ -3,11 +3,13 @@ from random import randint
 import tcod
 
 from components.ai import BasicMonster
+from components.equippable import Equippable
 from components.fighter import Fighter
 from components.item import Item
 from components.item_functions import heal, cast_lightning, cast_fireball, cast_confuse
 from components.stairs import Stairs
 from elements.entity import Entity
+from equipment_slots import EquipmentSlots
 from game_messages import Message
 from random_utils import random_choice_from_dict, from_dungeon_level
 from src.map_objects.tile import Tile
@@ -59,7 +61,7 @@ class GameMap:
     ##
     # Map creation
     def make_map(self, max_rooms, player):
-        entities = self.generate_rooms(self.width, self.height, max_rooms)
+        entities = self.generate_rooms(self.width, self.height, max_rooms, player)
 
         # the first room is where the player starts at
         player.x, player.y = self.rooms[0].center()
@@ -69,7 +71,7 @@ class GameMap:
 
         return entities
 
-    def generate_rooms(self, map_width, map_height, max_rooms):
+    def generate_rooms(self, map_width, map_height, max_rooms, player):
         self.rooms = []
         entities = []
         num_rooms = 0
@@ -91,7 +93,7 @@ class GameMap:
                 if new_room.intersect(other_room):
                     break
             else:
-                entities.extend(self.place_entities(new_room))
+                entities.extend(self.place_entities(new_room, player))
                 entities.extend(self.place_items(new_room))
                 self.rooms.append(new_room)
 
@@ -111,10 +113,9 @@ class GameMap:
 
                 num_rooms += 1
 
-        stairs_component = Stairs(self.dungeon_level + 1)
-        down_stairs = Entity(center_of_last_room_x, center_of_last_room_y, render_order=RenderOrder.STAIRS)
+        down_stairs = Entity(center_of_last_room_x, center_of_last_room_y, render_order=RenderOrder.STAIRS,
+                             components={'stairs': Stairs(self.dungeon_level + 1), })
         down_stairs.set_appearance('>', tcod.white, 'Stairs')
-        down_stairs.set_stairs(stairs_component)
         entities.append(down_stairs)
 
         return entities
@@ -133,7 +134,7 @@ class GameMap:
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
 
-    def place_entities(self, room):
+    def place_entities(self, room, player):
         entities = []
         # Get a random number of monsters
         max_monsters_per_room = from_dungeon_level([[2, 1], [3, 4], [5, 6]], self.dungeon_level)
@@ -152,7 +153,8 @@ class GameMap:
             x = randint(room.x1 + 1, room.x2 - 1)
             y = randint(room.y1 + 1, room.y2 - 1)
 
-            if not any([entity for entity in entities if entity.x == x and entity.y == y]):
+            if not any([entity for entity in entities if entity.x == x and entity.y == y]) and \
+                    player.x != x and player.y != y:
                 monster_choice = random_choice_from_dict(monster_chances)
 
                 if monster_choice == 'red_dragon' and self.number_of_bosses < self.max_number_of_bosses:
@@ -183,35 +185,42 @@ class GameMap:
             'super_healing': from_dungeon_level([[10, 3]], self.dungeon_level),
             'lightning_scroll': from_dungeon_level([[25, 4]], self.dungeon_level),
             'fireball_scroll': from_dungeon_level([[25, 6]], self.dungeon_level),
-            'confusion_scroll': from_dungeon_level([[10, 2]], self.dungeon_level)
+            'confusion_scroll': from_dungeon_level([[4, 2]], self.dungeon_level),
+            'short_sword': from_dungeon_level([[5, 2], [10, 3], [5, 5], [0, 6]], self.dungeon_level),
+            'long_sword': from_dungeon_level([[5, 3], [10, 5], [5, 7], [0, 8]], self.dungeon_level),
+            'mithril_sword': from_dungeon_level([[5, 6], [10, 7], [5, 9]], self.dungeon_level),
+            'buckler_shield': from_dungeon_level([[15, 4], [5, 5], [0, 6]], self.dungeon_level),
+            'small_shield': from_dungeon_level([[15, 6], [5, 8], [0, 9]], self.dungeon_level),
+            'tower_shield': from_dungeon_level([[5, 8], [10, 10]], self.dungeon_level),
+            'meteorite_shield': from_dungeon_level([[5, 9], ], self.dungeon_level),
         }
 
         for i in range(number_of_items):
             x = randint(room.x1 + 1, room.x2 - 1)
             y = randint(room.y1 + 1, room.y2 - 1)
+            equippable_component = None
+            item_component = None
 
             item_choice = random_choice_from_dict(item_chances)
-            if item_choice == 'healing_potion':
-                name = "Healing Potion"
-                color = tcod.violet
-                char = '!'
-                item_component = Item(use_function=heal, amount=40)
-            elif item_choice == 'super_healing':
+            if item_choice == 'super_healing':
                 name = "Mega Healing Potion"
                 color = tcod.lighter_violet
                 char = '!'
                 item_component = Item(use_function=heal, amount=80)
+
             elif item_choice == 'confusion_scroll':
                 name = "Scroll of Confusion"
                 color = tcod.light_pink
                 char = '~'
                 item_component = Item(use_function=cast_confuse, targeting=True, targeting_message=Message(
                     'Left-click an enemy to confuse it, or right-click to cancel.', tcod.light_cyan))
+
             elif item_choice == 'lightning_scroll':
                 name = "Scroll of Lightning"
                 color = tcod.yellow
                 char = '~'
                 item_component = Item(use_function=cast_lightning, damage=40, maximum_range=5)
+
             elif item_choice == 'fireball_scroll':
                 name = "Scroll of Fireball"
                 color = tcod.flame
@@ -224,10 +233,60 @@ class GameMap:
                         tcod.light_cyan),
                     damage=25, radius=3)
 
+            elif item_choice == 'short_sword':
+                equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=4)
+                char = ')'
+                color = tcod.light_grey
+                name = 'Short Sword'
+
+            elif item_choice == 'long_sword':
+                equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=5)
+                char = ')'
+                color = tcod.light_gray
+                name = 'Long Sword'
+
+            elif item_choice == 'mithril_sword':
+                equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=7)
+                char = ')'
+                color = tcod.dark_sky
+                name = 'Mithril Sword'
+
+            elif item_choice == 'buckler_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=1)
+                char = '['
+                color = tcod.gray
+                name = 'Buckler Shield'
+
+            elif item_choice == 'small_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=2)
+                char = '['
+                color = tcod.darker_orange
+                name = 'Small Shield'
+
+            elif item_choice == 'tower_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=4)
+                char = '['
+                color = tcod.desaturated_orange
+                name = 'Tower Shield'
+
+            elif item_choice == 'meteorite_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=6)
+                char = '['
+                color = tcod.dark_blue
+                name = 'Meteorite Tower Shield'
+
+            else:  # item_choice == 'healing_potion':
+                name = "Healing Potion"
+                color = tcod.violet
+                char = '!'
+                item_component = Item(use_function=heal, amount=40)
+
             if not any([entity for entity in items if entity.x == x and entity.y == y]):
-                item = Entity(x, y, render_order=RenderOrder.ITEM)
+                item = Entity(x, y, render_order=RenderOrder.ITEM, components={
+                    'item': item_component,
+                    'equippable': equippable_component,
+                })
                 item.set_appearance(char, color, name)
-                item.set_item(item_component)
                 items.append(item)
 
         return items
@@ -252,40 +311,45 @@ class GameMap:
 
 
 def spawn_orc(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=20, defense=0, power=4, xp=35),
+    })
     monster.set_appearance('o', tcod.desaturated_green, "Orc")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=20, defense=0, power=4, xp=35))
     return monster
 
 
 def spawn_kobold(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=10, defense=0, power=3, xp=25),
+    })
     monster.set_appearance('k', tcod.desaturated_green, "Kobold")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=10, defense=0, power=3, xp=25))
     return monster
 
 
 def spawn_ogre(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=25, defense=1, power=6, xp=75),
+    })
     monster.set_appearance('O', tcod.desaturated_green, "Ogre")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=25, defense=1, power=6, xp=75))
     return monster
 
 
 def spawn_troll(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=30, defense=2, power=8, xp=100),
+    })
     monster.set_appearance('T', tcod.darker_green, "Troll")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=30, defense=2, power=8, xp=100))
     return monster
 
 
 def spawn_dragon(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=35, defense=4, power=12, xp=300),
+    })
     monster.set_appearance('D', tcod.light_flame, "Red Dragon")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=35, defense=4, power=12, xp=300))
     return monster
