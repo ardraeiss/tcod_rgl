@@ -61,7 +61,7 @@ class GameMap:
     ##
     # Map creation
     def make_map(self, max_rooms, player):
-        entities = self.generate_rooms(self.width, self.height, max_rooms)
+        entities = self.generate_rooms(self.width, self.height, max_rooms, player)
 
         # the first room is where the player starts at
         player.x, player.y = self.rooms[0].center()
@@ -71,7 +71,7 @@ class GameMap:
 
         return entities
 
-    def generate_rooms(self, map_width, map_height, max_rooms):
+    def generate_rooms(self, map_width, map_height, max_rooms, player):
         self.rooms = []
         entities = []
         num_rooms = 0
@@ -93,7 +93,7 @@ class GameMap:
                 if new_room.intersect(other_room):
                     break
             else:
-                entities.extend(self.place_entities(new_room))
+                entities.extend(self.place_entities(new_room, player))
                 entities.extend(self.place_items(new_room))
                 self.rooms.append(new_room)
 
@@ -134,7 +134,7 @@ class GameMap:
     def is_blocked(self, x, y) -> bool:
         return self.tiles[x][y].blocked
 
-    def place_entities(self, room):
+    def place_entities(self, room, player):
         entities = []
         # Get a random number of monsters
         max_monsters_per_room = from_dungeon_level([[2, 1], [3, 4], [5, 6]], self.dungeon_level)
@@ -153,7 +153,8 @@ class GameMap:
             x = randint(room.x1 + 1, room.x2 - 1)
             y = randint(room.y1 + 1, room.y2 - 1)
 
-            if not any([entity for entity in entities if entity.x == x and entity.y == y]):
+            if not any([entity for entity in entities if entity.x == x and entity.y == y]) and \
+                    player.x != x and player.y != y:
                 monster_choice = random_choice_from_dict(monster_chances)
 
                 if monster_choice == 'red_dragon' and self.number_of_bosses < self.max_number_of_bosses:
@@ -245,7 +246,7 @@ class GameMap:
             elif item_choice == 'buckler_shield':
                 equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=1)
                 char = '['
-                color = tcod.darker_gray
+                color = tcod.gray
                 name = 'Buckler Shield'
 
             elif item_choice == 'small_shield':
@@ -257,7 +258,7 @@ class GameMap:
             elif item_choice == 'tower_shield':
                 equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=4)
                 char = '['
-                color = tcod.light_orange
+                color = tcod.desaturated_orange
                 name = 'Tower Shield'
 
             else:  # item_choice == 'healing_potion':
