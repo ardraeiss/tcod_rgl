@@ -7,6 +7,9 @@ class Level:
         self.level_up_base = level_up_base
         self.level_up_factor = level_up_factor
 
+    def set_owner(self, owner):
+        self.owner = owner
+
     @property
     def experience_to_next_level(self):
         return self.level_up_base + self.current_level * self.level_up_factor

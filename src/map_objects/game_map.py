@@ -111,10 +111,9 @@ class GameMap:
 
                 num_rooms += 1
 
-        stairs_component = Stairs(self.dungeon_level + 1)
-        down_stairs = Entity(center_of_last_room_x, center_of_last_room_y, render_order=RenderOrder.STAIRS)
+        down_stairs = Entity(center_of_last_room_x, center_of_last_room_y, render_order=RenderOrder.STAIRS,
+                             components={'stairs': Stairs(self.dungeon_level + 1), })
         down_stairs.set_appearance('>', tcod.white, 'Stairs')
-        down_stairs.set_stairs(stairs_component)
         entities.append(down_stairs)
 
         return entities
@@ -191,12 +190,7 @@ class GameMap:
             y = randint(room.y1 + 1, room.y2 - 1)
 
             item_choice = random_choice_from_dict(item_chances)
-            if item_choice == 'healing_potion':
-                name = "Healing Potion"
-                color = tcod.violet
-                char = '!'
-                item_component = Item(use_function=heal, amount=40)
-            elif item_choice == 'super_healing':
+            if item_choice == 'super_healing':
                 name = "Mega Healing Potion"
                 color = tcod.lighter_violet
                 char = '!'
@@ -223,11 +217,16 @@ class GameMap:
                         "Left-click a target tile for the fireball, or right-click to cancel.",
                         tcod.light_cyan),
                     damage=25, radius=3)
+            else:  # item_choice == 'healing_potion':
+                name = "Healing Potion"
+                color = tcod.violet
+                char = '!'
+                item_component = Item(use_function=heal, amount=40)
 
             if not any([entity for entity in items if entity.x == x and entity.y == y]):
-                item = Entity(x, y, render_order=RenderOrder.ITEM)
+                item = Entity(x, y, render_order=RenderOrder.ITEM, components={'item': item_component})
                 item.set_appearance(char, color, name)
-                item.set_item(item_component)
+                # item.set_item(item_component)
                 items.append(item)
 
         return items
@@ -252,40 +251,45 @@ class GameMap:
 
 
 def spawn_orc(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=20, defense=0, power=4, xp=35),
+    })
     monster.set_appearance('o', tcod.desaturated_green, "Orc")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=20, defense=0, power=4, xp=35))
     return monster
 
 
 def spawn_kobold(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=10, defense=0, power=3, xp=25),
+    })
     monster.set_appearance('k', tcod.desaturated_green, "Kobold")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=10, defense=0, power=3, xp=25))
     return monster
 
 
 def spawn_ogre(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=25, defense=1, power=6, xp=75),
+    })
     monster.set_appearance('O', tcod.desaturated_green, "Ogre")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=25, defense=1, power=6, xp=75))
     return monster
 
 
 def spawn_troll(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=30, defense=2, power=8, xp=100),
+    })
     monster.set_appearance('T', tcod.darker_green, "Troll")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=30, defense=2, power=8, xp=100))
     return monster
 
 
 def spawn_dragon(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR)
+    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
+        'ai': BasicMonster(),
+        'fighter': Fighter(hp=35, defense=4, power=12, xp=300),
+    })
     monster.set_appearance('D', tcod.light_flame, "Red Dragon")
-    monster.set_ai(BasicMonster())
-    monster.set_combat_info(Fighter(hp=35, defense=4, power=12, xp=300))
     return monster

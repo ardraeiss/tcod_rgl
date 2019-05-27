@@ -72,13 +72,12 @@ def get_constants():
 
 
 def get_game_variables(constants):
-    fighter_component = Fighter(hp=100, defense=1, power=4)
-    inventory_component = Inventory(26)
-    player = Entity(0, 0, blocks_movement=True, render_order=RenderOrder.ACTOR)
+    player = Entity(0, 0, blocks_movement=True, render_order=RenderOrder.ACTOR, components={
+        'fighter': Fighter(hp=100, defense=1, power=4),
+        'inventory': Inventory(26),
+        'level': Level(),
+    })
     player.set_appearance('@', tcod.white, 'Player')
-    player.set_combat_info(fighter_component)
-    player.set_inventory(inventory_component)
-    player.set_level(Level())
     entities = [player]
 
     game_map = GameMap(constants['map_width'], constants['map_height'],
