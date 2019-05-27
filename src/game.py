@@ -181,12 +181,12 @@ class Game:
 
             if a_level_up:
                 if a_level_up == 'hp':
-                    self.player.fighter.max_hp += 10
+                    self.player.fighter.base_max_hp += 10
                     self.player.fighter.hp += 10
                 elif a_level_up == 'str':
-                    self.player.fighter.power += 1
+                    self.player.fighter.base_power += 1
                 elif a_level_up == 'def':
-                    self.player.fighter.defense += 1
+                    self.player.fighter.base_defense += 1
 
                 self.game_state = self.previous_game_state
 
@@ -246,6 +246,7 @@ class Game:
             if self.game_state == GameStates.SHOW_INVENTORY:
                 inventory_results = self.player.inventory.use(item, entities=self.entities, fov_map=self.fov_map)
                 self.player_turn_results.extend(inventory_results)
+
             elif self.game_state == GameStates.DROP_INVENTORY:
                 inventory_results = self.player.inventory.drop_item(item)
                 self.player_turn_results.extend(inventory_results)
@@ -257,6 +258,7 @@ class Game:
             item_added = player_turn_result.get('item_added')
             item_dropped = player_turn_result.get('item_dropped')
             item_consumed = player_turn_result.get('consumed')
+            item_toggle_equip = player_turn_result.get('equip')
             targeting = player_turn_result.get('targeting')
             targeting_cancelled = player_turn_result.get('targeting_cancelled')
             xp = player_turn_result.get('xp')
@@ -268,10 +270,27 @@ class Game:
 
             if item_added:
                 self.pick_up_item(item_added)
+
             elif item_dropped:
                 self.drop_item(item_dropped)
+
+            elif item_toggle_equip:
+                equip_results = self.player.equipment.toggle_equip(item_toggle_equip)
+
+                for equip_result in equip_results:
+                    equipped = equip_result.get('equipped')
+                    dequipped = equip_result.get('dequipped')
+
+                    if equipped:
+                        self.message_log.add_message(Message('You equipped the {0}'.format(equipped.name)))
+
+                    if dequipped:
+                        self.message_log.add_message(Message('You dequipped the {0}'.format(dequipped.name)))
+                self.game_state = GameStates.ENEMY_TURN
+
             elif item_consumed:
                 self.use_item(item_consumed)
+
             elif targeting:
                 self.previous_game_state = GameStates.PLAYERS_TURN
                 self.game_state = GameStates.TARGETING
@@ -279,10 +298,12 @@ class Game:
                 self.targeting_item = targeting
 
                 self.message_log.add_message(self.targeting_item.item.targeting_message)
+
             elif targeting_cancelled:
                 self.game_state = self.previous_game_state
 
                 self.message_log.add_message(Message('Targeting cancelled'))
+
             elif xp:
                 self.give_xp(xp)
 

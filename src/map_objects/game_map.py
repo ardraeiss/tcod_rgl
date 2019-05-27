@@ -3,11 +3,13 @@ from random import randint
 import tcod
 
 from components.ai import BasicMonster
+from components.equippable import Equippable
 from components.fighter import Fighter
 from components.item import Item
 from components.item_functions import heal, cast_lightning, cast_fireball, cast_confuse
 from components.stairs import Stairs
 from elements.entity import Entity
+from equipment_slots import EquipmentSlots
 from game_messages import Message
 from random_utils import random_choice_from_dict, from_dungeon_level
 from src.map_objects.tile import Tile
@@ -182,12 +184,19 @@ class GameMap:
             'super_healing': from_dungeon_level([[10, 3]], self.dungeon_level),
             'lightning_scroll': from_dungeon_level([[25, 4]], self.dungeon_level),
             'fireball_scroll': from_dungeon_level([[25, 6]], self.dungeon_level),
-            'confusion_scroll': from_dungeon_level([[10, 2]], self.dungeon_level)
+            'confusion_scroll': from_dungeon_level([[4, 2]], self.dungeon_level),
+            'short_sword': from_dungeon_level([[5, 2], [10, 3], [5, 5]], self.dungeon_level),
+            'long_sword': from_dungeon_level([[5, 3], [10, 5], [5, 6]], self.dungeon_level),
+            'buckler_shield': from_dungeon_level([[15, 4], [5, 5]], self.dungeon_level),
+            'small_shield': from_dungeon_level([[15, 6], [5, 10]], self.dungeon_level),
+            'tower_shield': from_dungeon_level([[5, 8], [10, 10]], self.dungeon_level),
         }
 
         for i in range(number_of_items):
             x = randint(room.x1 + 1, room.x2 - 1)
             y = randint(room.y1 + 1, room.y2 - 1)
+            equippable_component = None
+            item_component = None
 
             item_choice = random_choice_from_dict(item_chances)
             if item_choice == 'super_healing':
@@ -195,17 +204,20 @@ class GameMap:
                 color = tcod.lighter_violet
                 char = '!'
                 item_component = Item(use_function=heal, amount=80)
+
             elif item_choice == 'confusion_scroll':
                 name = "Scroll of Confusion"
                 color = tcod.light_pink
                 char = '~'
                 item_component = Item(use_function=cast_confuse, targeting=True, targeting_message=Message(
                     'Left-click an enemy to confuse it, or right-click to cancel.', tcod.light_cyan))
+
             elif item_choice == 'lightning_scroll':
                 name = "Scroll of Lightning"
                 color = tcod.yellow
                 char = '~'
                 item_component = Item(use_function=cast_lightning, damage=40, maximum_range=5)
+
             elif item_choice == 'fireball_scroll':
                 name = "Scroll of Fireball"
                 color = tcod.flame
@@ -217,6 +229,37 @@ class GameMap:
                         "Left-click a target tile for the fireball, or right-click to cancel.",
                         tcod.light_cyan),
                     damage=25, radius=3)
+
+            elif item_choice == 'short_sword':
+                equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=4)
+                char = ')'
+                color = tcod.sky
+                name = 'Short Sword'
+
+            elif item_choice == 'long_sword':
+                equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=5)
+                char = ')'
+                color = tcod.sky
+                name = 'Long Sword'
+
+            elif item_choice == 'buckler_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=1)
+                char = '['
+                color = tcod.darker_gray
+                name = 'Buckler Shield'
+
+            elif item_choice == 'small_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=2)
+                char = '['
+                color = tcod.darker_orange
+                name = 'Small Shield'
+
+            elif item_choice == 'tower_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=4)
+                char = '['
+                color = tcod.light_orange
+                name = 'Tower Shield'
+
             else:  # item_choice == 'healing_potion':
                 name = "Healing Potion"
                 color = tcod.violet
@@ -224,9 +267,11 @@ class GameMap:
                 item_component = Item(use_function=heal, amount=40)
 
             if not any([entity for entity in items if entity.x == x and entity.y == y]):
-                item = Entity(x, y, render_order=RenderOrder.ITEM, components={'item': item_component})
+                item = Entity(x, y, render_order=RenderOrder.ITEM, components={
+                    'item': item_component,
+                    'equippable': equippable_component,
+                })
                 item.set_appearance(char, color, name)
-                # item.set_item(item_component)
                 items.append(item)
 
         return items

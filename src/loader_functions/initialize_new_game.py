@@ -1,5 +1,6 @@
 import tcod as tcod
 
+from components.equipment import Equipment
 from components.fighter import Fighter
 from components.inventory import Inventory
 from components.level import Level
@@ -76,6 +77,7 @@ def get_game_variables(constants):
         'fighter': Fighter(hp=100, defense=1, power=4),
         'inventory': Inventory(26),
         'level': Level(),
+        'equipment': Equipment(),
     })
     player.set_appearance('@', tcod.white, 'Player')
     entities = [player]

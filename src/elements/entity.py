@@ -2,6 +2,8 @@ from typing import Dict
 
 import math
 import tcod
+
+from components.item import Item
 from render_functions import RenderOrder
 
 
@@ -30,16 +32,23 @@ class Entity:
         self.item = None
         self.stairs = None
         self.level = None
+        self.equipment = None
+        self.equippable = None
 
         if components:
             self.init_components(components)
 
     def init_components(self, components):
-        for name in ('fighter', 'ai', 'inventory', 'item', 'stairs', 'level'):
+        for name in ('fighter', 'ai', 'inventory', 'item', 'stairs', 'level', 'equipment', 'equippable'):
             comp = components.get(name, None)
             if comp:
                 self.__dict__[name] = comp
                 comp.set_owner(self)
+
+        if self.equippable and not self.item:
+            item = Item()
+            self.item = item
+            self.item.set_owner(self)
 
     def set_appearance(self, char, color, name):
         self.char = char
