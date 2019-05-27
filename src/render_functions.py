@@ -130,11 +130,11 @@ class Render:
         if game_state == GameStates.SHOW_INVENTORY:
             text = "Press the key next to an item to use it, or Esc to cancel.\n"
             inventory_menu(self.main_console, text,
-                           player.inventory, 50, self.screen_width, self.screen_height)
+                           player, 50, self.screen_width, self.screen_height)
         elif game_state == GameStates.DROP_INVENTORY:
             text = "Press the key net to an item to drop it, or Esc to cancel.\n"
             inventory_menu(self.main_console, text,
-                           player.inventory, 50, self.screen_width, self.screen_height)
+                           player, 50, self.screen_width, self.screen_height)
         elif game_state == GameStates.LEVEL_UP:
             level_up_menu(self.main_console, 'Level up! Choose a stat to raise:',
                           player, 40, self.screen_width, self.screen_height)
