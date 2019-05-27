@@ -1,10 +1,12 @@
 import tcod as tcod
 
 from components.equipment import Equipment
+from components.equippable import Equippable
 from components.fighter import Fighter
 from components.inventory import Inventory
 from components.level import Level
 from elements.entity import Entity
+from equipment_slots import EquipmentSlots
 from game_map import GameMap
 from game_messages import MessageLog
 from game_states import GameStates
@@ -74,13 +76,19 @@ def get_constants():
 
 def get_game_variables(constants):
     player = Entity(0, 0, blocks_movement=True, render_order=RenderOrder.ACTOR, components={
-        'fighter': Fighter(hp=100, defense=1, power=4),
+        'fighter': Fighter(hp=100, defense=1, power=2),
         'inventory': Inventory(26),
         'level': Level(),
         'equipment': Equipment(),
     })
     player.set_appearance('@', tcod.white, 'Player')
     entities = [player]
+
+    equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=2)
+    dagger = Entity(0, 0, components={'equippable': equippable_component, })
+    dagger.set_appearance('-', tcod.sky, 'Dagger',)
+    player.inventory.add_item(dagger)
+    player.equipment.toggle_equip(dagger)
 
     game_map = GameMap(constants['map_width'], constants['map_height'],
                        constants['room_min_size'], constants['room_max_size'])
