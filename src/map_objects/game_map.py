@@ -186,11 +186,13 @@ class GameMap:
             'lightning_scroll': from_dungeon_level([[25, 4]], self.dungeon_level),
             'fireball_scroll': from_dungeon_level([[25, 6]], self.dungeon_level),
             'confusion_scroll': from_dungeon_level([[4, 2]], self.dungeon_level),
-            'short_sword': from_dungeon_level([[5, 2], [10, 3], [5, 5]], self.dungeon_level),
-            'long_sword': from_dungeon_level([[5, 3], [10, 5], [5, 6]], self.dungeon_level),
-            'buckler_shield': from_dungeon_level([[15, 4], [5, 5]], self.dungeon_level),
-            'small_shield': from_dungeon_level([[15, 6], [5, 10]], self.dungeon_level),
+            'short_sword': from_dungeon_level([[5, 2], [10, 3], [5, 5], [0, 6]], self.dungeon_level),
+            'long_sword': from_dungeon_level([[5, 3], [10, 5], [5, 7], [0, 8]], self.dungeon_level),
+            'mithril_sword': from_dungeon_level([[5, 6], [10, 7], [5, 9]], self.dungeon_level),
+            'buckler_shield': from_dungeon_level([[15, 4], [5, 5], [0, 6]], self.dungeon_level),
+            'small_shield': from_dungeon_level([[15, 6], [5, 8], [0, 9]], self.dungeon_level),
             'tower_shield': from_dungeon_level([[5, 8], [10, 10]], self.dungeon_level),
+            'meteorite_shield': from_dungeon_level([[5, 9], ], self.dungeon_level),
         }
 
         for i in range(number_of_items):
@@ -234,14 +236,20 @@ class GameMap:
             elif item_choice == 'short_sword':
                 equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=4)
                 char = ')'
-                color = tcod.sky
+                color = tcod.light_grey
                 name = 'Short Sword'
 
             elif item_choice == 'long_sword':
                 equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=5)
                 char = ')'
-                color = tcod.sky
+                color = tcod.light_gray
                 name = 'Long Sword'
+
+            elif item_choice == 'mithril_sword':
+                equippable_component = Equippable(EquipmentSlots.MAIN_HAND, power_bonus=7)
+                char = ')'
+                color = tcod.dark_sky
+                name = 'Mithril Sword'
 
             elif item_choice == 'buckler_shield':
                 equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=1)
@@ -260,6 +268,12 @@ class GameMap:
                 char = '['
                 color = tcod.desaturated_orange
                 name = 'Tower Shield'
+
+            elif item_choice == 'meteorite_shield':
+                equippable_component = Equippable(EquipmentSlots.OFF_HAND, defense_bonus=6)
+                char = '['
+                color = tcod.dark_blue
+                name = 'Meteorite Tower Shield'
 
             else:  # item_choice == 'healing_potion':
                 name = "Healing Potion"
