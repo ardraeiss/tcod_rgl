@@ -2,6 +2,7 @@ import tcod
 
 
 class Character:
+    """ Player character """
     def __init__(self, position, char):
         self.x, self.y = position
         self.char = char

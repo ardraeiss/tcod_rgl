@@ -8,6 +8,7 @@ from render_functions import RenderOrder
 
 
 class Entity:
+    """ A game entity: mob, item, environment element """
     def __init__(self, x, y, blocks_movement=True,
                  render_order=RenderOrder.CORPSE,
                  components: Dict = None):
