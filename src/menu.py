@@ -55,9 +55,9 @@ def main_menu(con, background_image, screen_width, screen_height):
 
     tcod.console_set_default_foreground(0, tcod.light_yellow)
     tcod.console_print_ex(con, int(screen_width / 2), int(screen_height / 2) - 4, tcod.BKGND_NONE, tcod.CENTER,
-                          'TOMBS OF THE ANCIENT KINGS')
+                          'TOMBS OF THE ANCIENT KING BUGS')
     tcod.console_print_ex(con, int(screen_width / 2), int(screen_height - 2), tcod.BKGND_NONE, tcod.CENTER,
-                          'By (Your name here)')
+                          "By Mikhail 'ArdRaeiss' Merzlyutin")
 
     menu(con, '', ['Play a new game', 'Continue last game', 'Quit'], 24, screen_width, screen_height)
 
