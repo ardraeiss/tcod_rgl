@@ -57,6 +57,7 @@ class Game:
             get_game_variables(self.constants)
 
     def run(self):
+        """ Main game loop """
         show_main_menu = True
         show_load_error_message = False
 
@@ -80,22 +81,22 @@ class Game:
 
                 action = handle_main_menu(key)
 
-                new_game = action.get('new_game')
-                load_saved_game = action.get('load_game')
-                exit_game = action.get('exit')
+                a_new_game = action.get('new_game')
+                a_load_saved_game = action.get('load_game')
+                a_exit_game = action.get('exit')
 
-                if show_load_error_message and (new_game or load_saved_game or exit_game):
+                if show_load_error_message and (a_new_game or a_load_saved_game or a_exit_game):
                     show_load_error_message = False
-                elif new_game:
+                elif a_new_game:
                     self.reset_game()
                     show_main_menu = False
-                elif load_saved_game:
+                elif a_load_saved_game:
                     try:
-                        self.player, self.entities, self.game_map, self.message_log, self.game_state = load_game()
+                        self.load_saved_game()
                         show_main_menu = False
                     except FileNotFoundError:
                         show_load_error_message = True
-                elif exit_game:
+                elif a_exit_game:
                     break
 
             else:
@@ -103,6 +104,9 @@ class Game:
                 self.play_game()
 
                 show_main_menu = True
+
+    def load_saved_game(self):
+        self.player, self.entities, self.game_map, self.message_log, self.game_state = load_game()
 
     def play_game(self) -> bool:
         print("Running")
@@ -157,42 +161,20 @@ class Game:
 
             a_exit = action.get('exit')
             if a_exit:
-                if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY, GameStates.CHARACTER_SCREEN):
-                    self.game_state = self.previous_game_state
-                elif self.game_state == GameStates.TARGETING:
-                    self.player_turn_results.append({'targeting_cancelled': True})
-                else:
-                    save_game(self.player, self.entities, self.game_map, self.message_log, self.game_state)
+                should_quit = self.do_action_exit_current_screen()
 
+                if should_quit:
                     return True
 
             if a_take_stairs and self.game_state == GameStates.PLAYERS_TURN:
-                stairs = next((e for e in self.entities if e.stairs), None)
-                if stairs and stairs.x == self.player.x and stairs.y == self.player.y:
-                    self.entities = self.game_map.next_floor(self.player, self.message_log, self.constants)
-                    self.fov_map = initialize_fov(self.game_map)
-                    fov_recompute = True
-                    self.render.game_map = self.game_map
-
-                    tcod.console_clear(self.main_console)
-
-                else:
-                    self.message_log.add_message(Message('There are no stairs here.', tcod.yellow))
+                fov_recompute = self.do_action_take_stairs(fov_recompute)
 
             if a_level_up:
-                if a_level_up == 'hp':
-                    self.player.fighter.base_max_hp += 10
-                    self.player.fighter.hp += 10
-                elif a_level_up == 'str':
-                    self.player.fighter.base_power += 1
-                elif a_level_up == 'def':
-                    self.player.fighter.base_defense += 1
+                self.do_action_level_up(a_level_up)
 
                 self.game_state = self.previous_game_state
 
-            a_fullscreen = action.get('fullscreen')
-            if a_fullscreen:
-                tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+            self.do_game_window_actions(action)
 
             fov_recompute = self.do_player_turn(action, fov_recompute)
 
@@ -200,6 +182,45 @@ class Game:
 
             if self.game_state == GameStates.ENEMY_TURN:
                 self.do_entities_actions()
+
+    def do_action_exit_current_screen(self):
+        should_quit_game = False
+        if self.game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY, GameStates.CHARACTER_SCREEN):
+            self.game_state = self.previous_game_state
+        elif self.game_state == GameStates.TARGETING:
+            self.player_turn_results.append({'targeting_cancelled': True})
+        else:
+            save_game(self.player, self.entities, self.game_map, self.message_log, self.game_state)
+            should_quit_game = True
+        return should_quit_game
+
+    def do_game_window_actions(self, action):
+        a_fullscreen = action.get('fullscreen')
+        if a_fullscreen:
+            tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+
+    def do_action_level_up(self, a_level_up):
+        if a_level_up == 'hp':
+            self.player.fighter.base_max_hp += 10
+            self.player.fighter.hp += 10
+        elif a_level_up == 'str':
+            self.player.fighter.base_power += 1
+        elif a_level_up == 'def':
+            self.player.fighter.base_defense += 1
+
+    def do_action_take_stairs(self, fov_recompute):
+        stairs = next((e for e in self.entities if e.stairs), None)
+        if stairs and stairs.x == self.player.x and stairs.y == self.player.y:
+            self.entities = self.game_map.next_floor(self.player, self.message_log, self.constants)
+            self.fov_map = initialize_fov(self.game_map)
+            fov_recompute = True
+            self.render.game_map = self.game_map
+
+            tcod.console_clear(self.main_console)
+
+        else:
+            self.message_log.add_message(Message('There are no stairs here.', tcod.yellow))
+        return fov_recompute
 
     def recompute_fov(self, fov_recompute):
         if fov_recompute:
@@ -275,18 +296,7 @@ class Game:
                 self.drop_item(item_dropped)
 
             elif item_toggle_equip:
-                equip_results = self.player.equipment.toggle_equip(item_toggle_equip)
-
-                for equip_result in equip_results:
-                    equipped = equip_result.get('equipped')
-                    dequipped = equip_result.get('dequipped')
-
-                    if equipped:
-                        self.message_log.add_message(Message('You equipped the {0}'.format(equipped.name)))
-
-                    if dequipped:
-                        self.message_log.add_message(Message('You dequipped the {0}'.format(dequipped.name)))
-                self.game_state = GameStates.ENEMY_TURN
+                self.evaluate_item_toggle_equip(item_toggle_equip)
 
             elif item_consumed:
                 self.use_item(item_consumed)
@@ -308,6 +318,19 @@ class Game:
                 self.give_xp(xp)
 
         self.player_turn_results = []
+
+    def evaluate_item_toggle_equip(self, item_toggle_equip):
+        equip_results = self.player.equipment.toggle_equip(item_toggle_equip)
+        for equip_result in equip_results:
+            equipped = equip_result.get('equipped')
+            dequipped = equip_result.get('dequipped')
+
+            if equipped:
+                self.message_log.add_message(Message('You equipped the {0}'.format(equipped.name)))
+
+            if dequipped:
+                self.message_log.add_message(Message('You dequipped the {0}'.format(dequipped.name)))
+        self.game_state = GameStates.ENEMY_TURN
 
     def give_xp(self, xp):
         leveled_up = self.player.level.add_xp(xp)
