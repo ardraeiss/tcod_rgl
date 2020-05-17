@@ -13,14 +13,6 @@ class RenderOrder(Enum):
     ACTOR = auto()
 
 
-_colors = {
-    'dark_wall': tcod.Color(0, 0, 100),
-    'dark_ground': tcod.Color(50, 50, 150),
-    'light_wall': tcod.Color(130, 110, 50),
-    'light_ground': tcod.Color(200, 180, 50),
-}
-
-
 class Render:
     def __init__(self, main_console, screen_width, screen_height, colors):
         self.main_console = main_console
