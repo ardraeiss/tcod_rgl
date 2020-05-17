@@ -2,9 +2,7 @@ from random import randint
 
 import tcod
 
-from components.ai import BasicMonster
 from components.equippable import Equippable
-from components.fighter import Fighter
 from components.item import Item
 from components.item_functions import heal, cast_lightning, cast_fireball, cast_confuse
 from components.stairs import Stairs
@@ -14,6 +12,7 @@ from game_messages import Message
 from random_utils import random_choice_from_dict, from_dungeon_level
 from src.map_objects.tile import Tile
 from src.map_objects.rect import Rect
+from src import mobs
 from render_functions import RenderOrder
 
 
@@ -32,7 +31,7 @@ class GameMap:
         self.dungeon_level = dungeon_level
 
         self.number_of_bosses = 0
-        self.max_number_of_bosses = from_dungeon_level([[1, 3], [3, 5], [7, 7]], self.dungeon_level)
+        self.max_number_of_bosses = from_dungeon_level(mobs.BOSSES_NUMBER_BY_DEPTH, self.dungeon_level)
 
     def initialize_tiles(self):
         """ Fill map with impassable walls """
@@ -131,23 +130,18 @@ class GameMap:
             self.create_v_tunnel(prev_y, new_y, prev_x)
             self.create_h_tunnel(prev_x, new_x, new_y)
 
-    def is_blocked(self, x, y) -> bool:
+    def is_blocked(self, x: int, y: int) -> bool:
         return self.tiles[x][y].blocked
 
     def place_entities(self, room, player):
         entities = []
         # Get a random number of monsters
-        max_monsters_per_room = from_dungeon_level([[2, 1], [3, 4], [5, 6]], self.dungeon_level)
+        max_monsters_per_room = from_dungeon_level(mobs.MAX_MONSTERS_PER_ROOM_BY_DEPTH, self.dungeon_level)
         number_of_monsters = randint(0, max_monsters_per_room)
 
-        monster_chances = {
-            'kobold': from_dungeon_level([[80, 1], [40, 3], [20, 4], [0, 5]], self.dungeon_level),
-            'orc': from_dungeon_level([[40, 1], [80, 2]], self.dungeon_level),
-            'troll': from_dungeon_level([[15, 3], [30, 5], [60, 7]], self.dungeon_level),
-            'ogre': from_dungeon_level([[20, 2], [15, 4], [0, 6]], self.dungeon_level),
-            'red_dragon': from_dungeon_level([[5, 5], [10, 6], [15, 7]], self.dungeon_level),
-        }
+        monster_chances = mobs.get_monster_chances_by_depth(self.dungeon_level)
 
+        # TODO extract monsters generation
         for i in range(number_of_monsters):
             # Choose a random location in the room
             x = randint(room.x1 + 1, room.x2 - 1)
@@ -157,18 +151,13 @@ class GameMap:
                     player.x != x and player.y != y:
                 monster_choice = random_choice_from_dict(monster_chances)
 
-                if monster_choice == 'red_dragon' and self.number_of_bosses < self.max_number_of_bosses:
-                    monster = spawn_dragon(x, y)
-                    self.number_of_bosses += 1
-                elif monster_choice == 'ogre' and self.number_of_bosses < self.max_number_of_bosses:
-                    monster = spawn_ogre(x, y)
-                    self.number_of_bosses += 1
-                elif monster_choice == 'troll':
-                    monster = spawn_troll(x, y)
-                elif monster_choice == 'orc':
-                    monster = spawn_orc(x, y)
-                else:
-                    monster = spawn_kobold(x, y)
+                if monster_choice in mobs.BOSS_MONSTERS:
+                    if self.number_of_bosses < self.max_number_of_bosses:
+                        self.number_of_bosses += 1
+                    else:
+                        monster_choice = 'kobold'
+
+                monster = mobs.spawn_regular_monster(x, y, monster_choice)
 
                 entities.append(monster)
 
@@ -201,6 +190,8 @@ class GameMap:
             equippable_component = None
             item_component = None
 
+            # TODO extract items data
+            # TODO extract items generation
             item_choice = random_choice_from_dict(item_chances)
             if item_choice == 'super_healing':
                 name = "Mega Healing Potion"
@@ -295,7 +286,7 @@ class GameMap:
         self.dungeon_level += 1
         entities = [player]
 
-        self.max_number_of_bosses = from_dungeon_level([[1, 2], [2, 5], [3, 7], [5, 8], [8, 9]], self.dungeon_level)
+        self.max_number_of_bosses = from_dungeon_level(mobs.BOSSES_NUMBER_BY_DEPTH, self.dungeon_level)
 
         self.room_min_size, self.room_max_size = constants['room_min_size'], constants['room_max_size']
         self.width, self.height = constants['map_width'], constants['map_height']
@@ -308,48 +299,3 @@ class GameMap:
         message_log.add_message(Message('You take a moment to rest, and recover your strength.', tcod.light_violet))
 
         return entities
-
-
-def spawn_orc(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
-        'ai': BasicMonster(),
-        'fighter': Fighter(hp=20, defense=0, power=4, xp=35),
-    })
-    monster.set_appearance('o', tcod.desaturated_green, "Orc")
-    return monster
-
-
-def spawn_kobold(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
-        'ai': BasicMonster(),
-        'fighter': Fighter(hp=10, defense=0, power=3, xp=25),
-    })
-    monster.set_appearance('k', tcod.desaturated_green, "Kobold")
-    return monster
-
-
-def spawn_ogre(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
-        'ai': BasicMonster(),
-        'fighter': Fighter(hp=25, defense=1, power=6, xp=75),
-    })
-    monster.set_appearance('O', tcod.desaturated_green, "Ogre")
-    return monster
-
-
-def spawn_troll(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
-        'ai': BasicMonster(),
-        'fighter': Fighter(hp=30, defense=2, power=8, xp=100),
-    })
-    monster.set_appearance('T', tcod.darker_green, "Troll")
-    return monster
-
-
-def spawn_dragon(x, y):
-    monster = Entity(x, y, render_order=RenderOrder.ACTOR, components={
-        'ai': BasicMonster(),
-        'fighter': Fighter(hp=35, defense=4, power=12, xp=300),
-    })
-    monster.set_appearance('D', tcod.light_flame, "Red Dragon")
-    return monster
