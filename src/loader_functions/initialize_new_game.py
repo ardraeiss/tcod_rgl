@@ -42,10 +42,10 @@ def get_constants():
     fov_radius = 10
 
     colors = {
-        'dark_wall': tcod.Color(0, 0, 100),
-        'dark_ground': tcod.Color(50, 50, 150),
-        'light_wall': tcod.Color(130, 110, 50),
-        'light_ground': tcod.Color(200, 180, 50)
+        'dark_wall': tcod.Color(50, 50, 150),
+        'dark_ground': tcod.Color(0, 0, 100),
+        'light_wall': tcod.Color(150, 130, 50),
+        'light_ground': tcod.Color(100, 80, 50)
     }
 
     constants = {
