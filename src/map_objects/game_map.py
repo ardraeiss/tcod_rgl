@@ -1,4 +1,5 @@
 from random import randint
+from typing import Dict, List
 
 import tcod
 
@@ -59,7 +60,7 @@ class GameMap:
 
     ##
     # Map creation
-    def make_map(self, max_rooms, player):
+    def make_map(self, max_rooms: int, player) -> List[Entity]:
         entities = self.generate_rooms(self.width, self.height, max_rooms, player)
 
         # the first room is where the player starts at
@@ -70,7 +71,7 @@ class GameMap:
 
         return entities
 
-    def generate_rooms(self, map_width, map_height, max_rooms, player):
+    def generate_rooms(self, map_width, map_height, max_rooms, player) -> List[Entity]:
         self.rooms = []
         entities = []
         num_rooms = 0
@@ -119,7 +120,7 @@ class GameMap:
 
         return entities
 
-    def dig_tunnel_to_previous_room(self, new_x, new_y, prev_x, prev_y):
+    def dig_tunnel_to_previous_room(self, new_x: int, new_y: int, prev_x: int, prev_y: int):
         # flip a coin (random number that is either 0 or 1)
         if randint(0, 1) == 1:
             # first move horizontally, then vertically
@@ -133,7 +134,7 @@ class GameMap:
     def is_blocked(self, x: int, y: int) -> bool:
         return self.tiles[x][y].blocked
 
-    def place_entities(self, room, player):
+    def place_entities(self, room, player) -> List[Entity]:
         entities = []
         # Get a random number of monsters
         max_monsters_per_room = from_dungeon_level(mobs.MAX_MONSTERS_PER_ROOM_BY_DEPTH, self.dungeon_level)
@@ -282,7 +283,7 @@ class GameMap:
 
         return items
 
-    def next_floor(self, player, message_log, constants):
+    def next_floor(self, player, message_log, constants) -> List[Entity]:
         self.dungeon_level += 1
         entities = [player]
 
